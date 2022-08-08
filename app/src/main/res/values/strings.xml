@@ -12,6 +12,7 @@
     <string name="click_to_open">Click to open</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>
+    <string name="recording">Recording</string>
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
     <string name="title_activity_main">Main</string>
 </resources>

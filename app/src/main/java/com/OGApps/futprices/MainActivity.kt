@@ -1,33 +1,76 @@
 package com.OGApps.futprices
 
+import android.app.Service
+import android.content.ContentValues.TAG
+import android.content.Intent
+import android.media.projection.MediaProjection
+import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
+import android.provider.Settings
+import android.util.Log
+import android.view.Display
 import android.view.Menu
-import android.view.MenuItem
+import android.view.View
+import android.widget.Button
+import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import com.OGApps.futprices.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity() {
 
-    private lateinit var appBarConfiguration: AppBarConfiguration
-    private lateinit var binding: ActivityMainBinding
+class MainActivity : ComponentActivity() {
 
+
+    companion object {
+        private const val REQUEST_CAPTURE = 1
+        var mDisplay: Display? = null
+
+        var projection: MediaProjection? = null
+    }
+
+    private lateinit var mainActivity: ActivityMainBinding
+    private lateinit var mediaProjectionManager: MediaProjectionManager
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private val startMediaProjection = registerForActivityResult(ActivityResultContracts.StartActivityForResult())
+    { result: ActivityResult ->
+        if (result.resultCode == RESULT_OK) {
+            Log.i(TAG, "onCreate: media projection result: ${result.data?.action} & ${result.data}")
+            val service = OverlayService.getStartIntent(this, result.resultCode, result.data)
+            startForegroundService(service)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        mainActivity = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(mainActivity.root)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            mDisplay = display
+        } else {
+            @Suppress("DEPRECATION")
+            mDisplay = windowManager.defaultDisplay
+        }
 
+        var startButton = findViewById<Button>(R.id.start_service)
 
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        appBarConfiguration = AppBarConfiguration(navController.graph)
-        setupActionBarWithNavController(navController, appBarConfiguration)
-
+        startButton.setOnClickListener(View.OnClickListener {
+            getPermissions()
+            startProjection()
+        })
+        var stopButton = findViewById<Button>(R.id.stop_service)
+        stopButton.setOnClickListener(View.OnClickListener {
+            stopProjection()
+        })
     }
+
+//    private fun registerForActivityResult(startActivityForResult: Any, any: Any): Any {
+//
+//    }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -35,19 +78,51 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
+    private fun getPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
+            // check if permission is already allowed
+            var canDraw: Boolean = true
+            var intent: Intent? = null
+            intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+            canDraw = Settings.canDrawOverlays(this)
+            if (!canDraw && intent != null) {
+                startActivity(intent)
+            }
+
+
         }
+
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        return navController.navigateUp(appBarConfiguration)
-                || super.onSupportNavigateUp()
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun startProjection() {
+        mediaProjectionManager = getSystemService(Service.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        startMediaProjection.launch(mediaProjectionManager.createScreenCaptureIntent())
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun stopProjection() {
+        startMediaProjection.unregister()
+        stopService(OverlayService.getStopIntent(this))
+    }
+
+//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        super.onActivityResult(requestCode, resultCode, data)
+//        if (requestCode == REQUEST_CAPTURE) {
+//            if (resultCode == RESULT_OK) {
+//                val intent = Intent(this, OverlayService::class.java)
+//                    .setAction(OverlayService.ACTION_ENABLE_CAPTURE)
+//                startService(intent)
+//                projection = data?.let { mediaProjectionManager.getMediaProjection(resultCode, it) }
+//                Toast.makeText(this,"something is startinh", Toast.LENGTH_SHORT).show()
+//
+//            } else {
+//                projection = null
+//                Toast.makeText(this,"error occured", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//        finish()
+//    }
 }
+
