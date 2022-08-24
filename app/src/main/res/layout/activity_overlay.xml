@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/overlay"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    tools:context=".OverlayActivity">
+
+    <TextView
+        android:id="@+id/textInvalid"
+        android:layout_width="305dp"
+        android:layout_height="48dp"
+        android:text="@string/invalid_screenshot"
+        android:textSize="34sp" />
+
+    <TextView
+        android:id="@+id/textDetails"
+        android:layout_width="376dp"
+        android:layout_height="354dp"
+        android:layout_below="@+id/textInvalid"
+        android:layout_marginBottom="29dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginTop="13dp"
+        android:layout_toStartOf="@+id/currentScreenshot"
+        android:text="could not detect player stats. \n please ensure you are on the FIFA 22 Companion App and it says player details at the top of the  screen" />
+
+    <ImageView
+        android:id="@+id/currentScreenshot"
+        android:layout_width="119dp"
+        android:layout_height="223dp"
+        android:layout_alignParentEnd="true"
+        android:layout_below="@+id/textInvalid"
+        android:layout_marginEnd="2dp"
+        android:layout_marginTop="63dp"
+        android:contentDescription="@string/screenshot"
+        android:scaleType="fitEnd" />
+
+    <Button
+        android:id="@+id/btnClose"
+        android:layout_width="138dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_below="@+id/textDetails"
+        android:layout_marginEnd="298dp"
+        android:layout_marginTop="1dp"
+        android:text="@string/close" />
+
+
+</RelativeLayout>

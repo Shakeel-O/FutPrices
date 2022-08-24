@@ -7,10 +7,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
-import android.graphics.Bitmap
-import android.graphics.ImageFormat
-import android.graphics.PixelFormat
-import android.hardware.HardwareBuffer.RGBA_8888
+import android.graphics.*
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.Image
@@ -26,22 +23,44 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
+import java.io.ByteArrayOutputStream
 
 
-class OverlayService : Service(), View.OnTouchListener, View.OnClickListener {
+class OverlayService() : Service(), View.OnTouchListener, View.OnClickListener {
 
 
     companion object {
-        internal fun getStopIntent(context: Context?): Intent? {
+
+        fun scanImage(bitmap: Bitmap, callback: (String) -> Unit) {
+            val inputImage = InputImage.fromBitmap(bitmap, 0)
+            var failed = false
+            val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+            val result = recognizer.process(inputImage)
+                .addOnSuccessListener { result ->
+                    Log.i(TAG, "processed image: $inputImage \b visionText: ${result.text}")
+callback(result.text)
+
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "processing image failed: $IMAGES_PRODUCED$inputImage")
+                    Log.e(TAG, "processing image error: $e")
+                }
+//            Log.i(TAG, "other method: ${result.result}")
+        }
+
+//        private fun scanFailed(bitmap: Bitmap, overlayService: OverlayService?) =
+//            overlayService?.scanFailed(
+//                bitmap
+//            )
+
+        internal fun getStopIntent(context: Context?): Intent {
             val intent = Intent(context, OverlayService::class.java)
             intent.putExtra(ACTION, STOP)
             return intent
         }
 
-        fun getStartIntent(context: Context?, resultCode: Int, data: Intent?): Intent? {
+        fun getStartIntent(context: Context?, resultCode: Int, data: Intent?): Intent {
             val intent = Intent(context, OverlayService::class.java)
             intent.putExtra(ACTION, START)
             intent.putExtra(RESULT_CODE, resultCode)
@@ -49,7 +68,61 @@ class OverlayService : Service(), View.OnTouchListener, View.OnClickListener {
             return intent
         }
 
-        val TAG = "ScreenCaptureService"
+
+        fun convertToBitmap(image: Image): Bitmap {
+            val bitmap: Bitmap?
+            val planes: Array<Image.Plane> = image.planes
+            val buffer = planes[0].buffer
+            val pixelStride = planes[0].pixelStride
+            val rowStride = planes[0].rowStride
+            val rowPadding: Int = rowStride - pixelStride * mWidth
+
+            // create bitmap
+            bitmap = Bitmap.createBitmap(
+                mWidth + rowPadding / pixelStride,
+                mHeight,
+                Bitmap.Config.ARGB_8888
+            )
+            buffer.rewind()
+            bitmap.copyPixelsFromBuffer(buffer)
+            return bitmap
+        }
+
+        fun convertToCroppedBitmap(image: Image): Bitmap {
+//            var bitmap: Bitmap? = null
+            val planes: Array<Image.Plane> = image.planes
+            val buffer = planes[0].buffer
+            val pixelStride = planes[0].pixelStride
+            val rowStride = planes[0].rowStride
+            val rowPadding: Int = rowStride - pixelStride * mWidth
+
+            // create bitmap
+            val origBitmap = Bitmap.createBitmap(
+                mWidth + rowPadding / pixelStride,
+                mHeight,
+                Bitmap.Config.ARGB_8888
+            )
+            val bitmap = Bitmap.createScaledBitmap(origBitmap,
+                origBitmap.width,
+                origBitmap.height /(5/2),false
+            )
+//            bitmap= Bitmap.createBitmap(origBitmap,10,10,origBitmap.width-11,
+//                origBitmap.height /(5/2))
+            val c = Canvas(bitmap)
+            val paint = Paint()
+            val cm = ColorMatrix()
+            cm.setSaturation(0F)
+            val f = ColorMatrixColorFilter(cm)
+            val left = 0f
+            paint.colorFilter = f
+            c.drawBitmap(bitmap, left, left, paint)
+            buffer.rewind()
+            bitmap?.copyPixelsFromBuffer(buffer)
+            return bitmap
+        }
+
+
+        val TAG = "OverlayService"
         val RESULT_CODE = "RESULT_CODE"
         val DATA = "DATA"
         val ACTION = "ACTION"
@@ -64,30 +137,32 @@ class OverlayService : Service(), View.OnTouchListener, View.OnClickListener {
         private var mWidth = 0
         private var mHeight = 0
         private var initialised = false
+
+        @SuppressLint("StaticFieldLeak")
+        lateinit var results: ImageView
+        var image: Image? = null
     }
 
+    var layoutFlag: Int? = null
     private lateinit var windowManager: WindowManager
     private lateinit var gIntent: Intent
 
     private lateinit var overlayButton: ImageView
     private lateinit var params: WindowManager.LayoutParams
     private var moving = false
-//    private val capture = Capture(this)
 
-    private val mStoreDir: String? = null
     private var mDensity = 0
-    private val mRotation = 0
     private var mDisplay: Display? = null
 
 
     private class MediaProjectionStopCallback : MediaProjection.Callback() {
         override fun onStop() {
             Log.e(TAG, "stopping projection.")
-            mHandler?.post(Runnable {
+            mHandler?.post {
                 virtualDisplay?.release()
                 imageReader?.setOnImageAvailableListener(null, null)
                 mediaProjection?.unregisterCallback(this@MediaProjectionStopCallback)
-            })
+            }
         }
     }
 
@@ -103,112 +178,131 @@ class OverlayService : Service(), View.OnTouchListener, View.OnClickListener {
 
     private class ImageAvailableListener : ImageReader.OnImageAvailableListener {
         override fun onImageAvailable(reader: ImageReader) {
-            var fos: FileOutputStream? = null
             var bitmap: Bitmap? = null
-            val image = reader.acquireLatestImage()
+            image = reader.acquireLatestImage()
             try {
-                if (image != null) {
+
+                val image1 = image
+                if (image1 != null) {
                     Log.i(
                         TAG,
-                        "heres the image: $image"
+                        "heres the image: $image1"
                     )
-                    val planes: Array<Image.Plane> = image.planes
-                    val buffer = planes[0].buffer
-                    val pixelStride = planes[0].pixelStride
-                    val rowStride = planes[0].rowStride
-                    val rowPadding: Int = rowStride - pixelStride * mWidth
+                    bitmap = convertToCroppedBitmap(image1)
 
-                    // create bitmap
-                    bitmap = Bitmap.createBitmap(
-                        mWidth + rowPadding / pixelStride,
-                        mHeight,
-                        Bitmap.Config.ARGB_8888
-                    );
-                    bitmap.copyPixelsFromBuffer(buffer);
+                    scanImage(bitmap){}
 
-                    val recognizer =
-                        TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-                    val inputImage = InputImage.fromBitmap(bitmap, 0)
 
-                    val result = recognizer.process(inputImage)
-                        .addOnSuccessListener { result ->
-                            Log.i(TAG, "processed image: $inputImage \b visionText: $result")
-                            val resultText = result.text
-                            if (resultText != "") {
-                                Log.i("results", "resultText: $resultText")
-                                if (resultText.contains("player details", ignoreCase = true) || resultText.contains("item details", ignoreCase = true)
-                                ) {
-                                    getPlayerDetails(result)
-                                }
-                            }
 
-                        }
-                        .addOnFailureListener { e ->
-                            Log.e(TAG, "processing image failed: $IMAGES_PRODUCED$inputImage")
-                            Log.e(TAG, "processing image error: $e")
-                        }
 
-                    image.close()
                     IMAGES_PRODUCED++
-//                        Log.i(
-//                            TAG,
-//                            "captured image: $IMAGES_PRODUCED$bitmap"
-//                        )
                 }
-//                }
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                if (fos != null) {
-                    try {
-                        fos!!.close()
-                    } catch (ioe: IOException) {
-                        ioe.printStackTrace()
-                    }
-                }
+                image?.close()
                 if (bitmap != null) {
-                    bitmap!!.recycle()
+                    bitmap.recycle()
                 }
             }
         }
 
-        private fun getPlayerDetails(result: Text) {
-            for (block in result.textBlocks) {
-                val blockText = block.text
-                val blockCornerPoints = block.cornerPoints
-                val blockFrame = block.boundingBox
-                //TODO: find index of block containing 'pac' 'sho' 'pas' etc. split them up. get index before for name, index after for position
-                Log.i("results", "blockText: $blockText")
-                for (line in block.lines) {
-                    val lineText = line.text
-                    val lineCornerPoints = line.cornerPoints
-                    val lineFrame = line.boundingBox
-                    Log.i("results", "lineText: $lineText")
+    }
 
-                    for (element in line.elements) {
-                        val elementText = element.text
-                        val elementCornerPoints = element.cornerPoints
-                        val elementFrame = element.boundingBox
-                        Log.i("results", "elementText: $elementText")
+    fun scanFailed(bitmap: Bitmap) {
+        //Convert to byte array
+        Toast.makeText(this, "scan failed", Toast.LENGTH_SHORT).show()
+        val stream = ByteArrayOutputStream()
+        val overlayIntent: Intent = Intent(this, OverlayActivity::class.java)
+//                var overlayIntent = Intent(MainActivity.getContext(), OverlayActivity::class.java)
+        overlayIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+//        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        var currSize: Int
+        var currQuality = 100
+        var maxSizeBytes = 1400000
 
-                    }
+
+        do {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, currQuality, stream)
+            currSize = stream.toByteArray().size
+            // limit quality by 5 percent every time
+            currQuality -= 5
+        } while (currSize >= maxSizeBytes)
+        val byteArray: ByteArray = stream.toByteArray()
+        overlayIntent.putExtra("image", byteArray)
+        startActivity(overlayIntent)
+    }
+
+    fun getPlayerDetails(result: Text) {
+        for (block in result.textBlocks) {
+            val blockText = block.text
+            val blockCornerPoints = block.cornerPoints
+            val blockFrame = block.boundingBox
+            //TODO: find index of block containing 'pac' 'sho' 'pas' etc. split them up. get index before for name, index after for position
+            Log.i(TAG+"results", "blockText: $blockText")
+            val array = arrayOf(blockText)
+//                if ()
+//                {
+//                    return
+//                }
+            for (line in block.lines) {
+                val lineText = line.text
+                val lineCornerPoints = line.cornerPoints
+                val lineFrame = line.boundingBox
+                Log.i(TAG+"results", "lineText: $lineText")
+
+                for (element in line.elements) {
+                    val elementText = element.text
+                    val elementCornerPoints = element.cornerPoints
+                    val elementFrame = element.boundingBox
+                    Log.i(TAG+"results", "elementText: $elementText")
+
                 }
             }
         }
     }
 
+    fun getPlayerDetailsList(result: Text) {
+        for (block in result.textBlocks) {
+            val blockText = block.text
+            val blockCornerPoints = block.cornerPoints
+            val blockFrame = block.boundingBox
+            //TODO: find index of block containing 'pac' 'sho' 'pas' etc. split them up. get index before for name, index after for position
+            Log.i("results", "blockText: $blockText")
+            val array = arrayOf(blockText)
+//                if ()
+//                {
+//                    return
+//                }
+            for (line in block.lines) {
+                val lineText = line.text
+                val lineCornerPoints = line.cornerPoints
+                val lineFrame = line.boundingBox
+                Log.i("results", "lineText: $lineText")
+
+                for (element in line.elements) {
+                    val elementText = element.text
+                    val elementCornerPoints = element.cornerPoints
+                    val elementFrame = element.boundingBox
+                    Log.i("results", "elementText: $elementText")
+
+                }
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
 
         Toast.makeText(this, "service started", Toast.LENGTH_SHORT).show()
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        results = ImageView(this)
         overlayButton = ImageView(this)
         overlayButton.setImageResource(R.mipmap.fut_prices_logo)
         overlayButton.setOnClickListener(this)
         overlayButton.setOnTouchListener(this)
 
-        val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         } else {
             WindowManager.LayoutParams.TYPE_PHONE
@@ -216,17 +310,18 @@ class OverlayService : Service(), View.OnTouchListener, View.OnClickListener {
         params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            layoutFlag,
+            layoutFlag!!,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         )
 
-        params.gravity = Gravity.TOP or Gravity.START
+        params.gravity = Gravity.TOP or Gravity.END
 
         params.x = 0
-        params.y = 100
+        params.y = 400
 
         windowManager.addView(overlayButton, params)
+
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -253,7 +348,7 @@ class OverlayService : Service(), View.OnTouchListener, View.OnClickListener {
                 override fun run() {
                     Looper.prepare()
                     mHandler = Handler(Looper.getMainLooper())
-                    Toast.makeText(this@OverlayService, "LOOPER", Toast.LENGTH_SHORT).show()
+//                    Toast.makeText(this@OverlayService, "LOOPER", Toast.LENGTH_SHORT).show()
 
                     Looper.loop()
                 }
@@ -276,10 +371,15 @@ class OverlayService : Service(), View.OnTouchListener, View.OnClickListener {
         return null
     }
 
+//    override fun onHandleIntent(intent: Intent?) {
+//        TODO("Not yet implemented")
+//    }
+
     private var initialX = 0
     private var initialY = 0
     private var initialTouchX = 0.0f
     private var initialTouchY = 0.0f
+//    private lateinit var mainActivity: OverlayBinding
 
     override fun onTouch(view: View?, event: MotionEvent?): Boolean {
 
@@ -301,7 +401,7 @@ class OverlayService : Service(), View.OnTouchListener, View.OnClickListener {
             }
             MotionEvent.ACTION_MOVE -> {
                 moving = true
-                params.x = initialX + (event.rawX - initialTouchX).toInt()
+                params.x = initialX - (event.rawX - initialTouchX).toInt()
                 params.y = initialY + (event.rawY - initialTouchY).toInt()
                 windowManager.updateViewLayout(overlayButton, params)
             }
@@ -311,29 +411,147 @@ class OverlayService : Service(), View.OnTouchListener, View.OnClickListener {
 
     override fun onClick(p0: View?) {
         if (!moving) {
-            Toast.makeText(this, "here is where i will screenshot", Toast.LENGTH_SHORT).show()
-//            MainActivity.projection?.run {
-//                capture.run(this) {
-//                    capture.stop()
-//                    // save bitmap
-//                }
-//            }
-//            val content = window.decorView
-//            val w = content.width
-//            val h = content.height
-//            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-//            content.draw(Canvas(bitmap))
+            Log.i(TAG, "onClick: $image")
+            val latestImage: Image? = imageReader?.acquireLatestImage()
+            var bitmap: Bitmap? = null
+            try {
+                if (latestImage != null) {
+                    Toast.makeText(this, "here is where i will screenshot", Toast.LENGTH_SHORT)
+                        .show()
+
+                    Log.i(
+                        TAG,
+                        "heres the screenshot image: $latestImage"
+                    )
+                    bitmap = convertToCroppedBitmap(latestImage)
+//                    bitmap = convertToBitmap(latestImage!!)
+
+//                    results.setImageBitmap(bitmap)
+//                    params = WindowManager.LayoutParams(
+//                        WindowManager.LayoutParams.WRAP_CONTENT / 2,
+//                        WindowManager.LayoutParams.WRAP_CONTENT / 2,
+//                        layoutFlag!!,
+//                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+//                        PixelFormat.TRANSLUCENT
+//                    )
+
+                    scanImage(bitmap)
+                    {resultText ->
+                        if (resultText != "") {
+                            Log.i(TAG, "resultText: $resultText")
+                            if (resultText.contains("player details", ignoreCase = true) ||
+                                resultText.contains("item details", ignoreCase = true)
+                            ) {
+                                /* example of successful screenshot
+                                *     O 30 A4 14%
+    PLAYER DETAILS
+    472,505 0
+    95
+    ST
+    Arsenal
+    p
+    LACAZETTE
+    94 PAC
+    96 SHO
+    88 PAS
+    95 DRI
+    57 DEF
+    93 PHY
+    POS: ST*/
+
+
+                            } else if (resultText.contains("unassigned", ignoreCase = true) ||
+                                resultText.contains("my club players", ignoreCase = true)
+                            ) {
+                            } else {
+                                scanFailed(bitmap)
+                                bitmap!!.recycle()
+                                Log.i(TAG, "wrong screen: $resultText")
+                            }
+                        } else {
+                            Log.i(TAG, "no text found: $resultText")
+                            scanFailed(bitmap)
+                            bitmap!!.recycle()
+                        }
+                    }
+                    latestImage.close()
+                    IMAGES_PRODUCED++
+                } else {
+                    Toast.makeText(this, "no image found", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                if (bitmap != null) {
+//                    bitmap!!.recycle()
+                }
+            }
         }
     }
 
+//    private fun detectText() {
+//        val keypoint = MatOfKeyPoint()
+//        val listpoint: List<KeyPoint>
+//        var kpoint: KeyPoint
+//        val mask: Mat = Mat.zeros(mGrey.size(), CvType.CV_8UC1)
+//        var rectanx1: Int
+//        var rectany1: Int
+//        var rectanx2: Int
+//        var rectany2: Int
+//        val imgsize: Int = mGrey.height() * mGrey.width()
+//        val zeos = Scalar(0, 0, 0)
+//        val contour2: List<MatOfPoint> = ArrayList()
+//        val kernel = Mat(1, 50, CvType.CV_8UC1, Scalar.all(255.0))
+//        val morbyte = Mat()
+//        val hierarchy = Mat()
+//        var rectan3: Rect
+//        //
+//        val detector: FeatureDetector = FeatureDetector
+//            .create(FeatureDetector.MSER)
+//        detector.detect(mGrey, keypoint)
+//        listpoint = keypoint.toList()
+//        //
+//        for (ind in listpoint.indices) {
+//            kpoint = listpoint[ind]
+//            rectanx1 = (kpoint.pt.x - 0.5 * kpoint.size).toInt()
+//            rectany1 = (kpoint.pt.y - 0.5 * kpoint.size).toInt()
+//            rectanx2 = kpoint.size.toInt()
+//            rectany2 = kpoint.size.toInt()
+//            if (rectanx1 <= 0) rectanx1 = 1
+//            if (rectany1 <= 0) rectany1 = 1
+//            if (rectanx1 + rectanx2 > mGrey.width()) rectanx2 = mGrey.width() - rectanx1
+//            if (rectany1 + rectany2 > mGrey.height()) rectany2 = mGrey.height() - rectany1
+//            val rectant = Rect(rectanx1, rectany1, rectanx2, rectany2)
+//            try {
+//                val roi = Mat(mask, rectant)
+//                roi.setTo(CONTOUR_COLOR)
+//            } catch (ex: java.lang.Exception) {
+//                Log.d("mylog", "mat roi error " + ex.message)
+//            }
+//        }
+//        Imgproc.morphologyEx(mask, morbyte, Imgproc.MORPH_DILATE, kernel)
+//        Imgproc.findContours(
+//            morbyte, contour2, hierarchy,
+//            Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE
+//        )
+//        for (ind in contour2.indices) {
+//            rectan3 = Imgproc.boundingRect(contour2[ind])
+//            rectan3 = Imgproc.boundingRect(contour2[ind])
+//            if (rectan3.area() > 0.5 * imgsize || rectan3.area() < 100 || rectan3.width / rectan3.height < 2) {
+//                val roi = Mat(morbyte, rectan3)
+//                roi.setTo(zeos)
+//            } else Imgproc.rectangle(
+//                mRgba, rectan3.br(), rectan3.tl(),
+//                CONTOUR_COLOR
+//            )
+//        }
+//    }
+
     private fun startProjection(resultCode: Int, data: Intent) {
         val mpManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        Log.i(ContentValues.TAG, "starting projection")
-
         if (mediaProjection == null) {
 
             mediaProjection = mpManager.getMediaProjection(resultCode, data)
-            Log.i(ContentValues.TAG, "startProjection: $mediaProjection ")
             if (mediaProjection != null) {
                 // display metrics
                 mDensity = Resources.getSystem().displayMetrics.densityDpi
@@ -387,9 +605,9 @@ class OverlayService : Service(), View.OnTouchListener, View.OnClickListener {
             null,
             mHandler
         )
-        imageReader!!.setOnImageAvailableListener(
-            ImageAvailableListener(),
-            mHandler
-        )
+//        imageReader!!.setOnImageAvailableListener(
+//            ImageAvailableListener(),
+//            mHandler
+//        )
     }
 }
