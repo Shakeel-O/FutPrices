@@ -71,7 +71,7 @@ object PlayerSearch {
             val endIndex = resultText.indexOf("POS") - 1
             if (startIndex > 0 && endIndex > 0 && startIndex < endIndex) {
                 stats = resultText.substring(startIndex, endIndex)
-                Log.i(OverlayService.TAG, "stats: $stats")
+                Log.i(FloatingPriceService.TAG, "stats: $stats")
                 map = stats.split("(?<=\\D)(?=\\d)".toRegex()).associateTo(HashMap()) {
                     val (left, right) = it.split(" ")
                     right.trim() to left.trim()+','+left.trim()
@@ -85,20 +85,20 @@ object PlayerSearch {
                 map.remove("PHY")?.let { map.put("Physicality", it) };
                 map.remove("PAY")?.let { map.put("Physicality", it) };
 //                map["position"] = resultText.substring(endIndex+6, resultText.count())
-                Log.i(OverlayService.TAG, "map: $map mapString: ${urlEncodeUTF8(map)}")
+                Log.i(FloatingPriceService.TAG, "map: $map mapString: ${urlEncodeUTF8(map)}")
 //                getFilteredPlayers(urlEncodeUTF8(map))
 //                val hmm = stats.split("(?<=\\D)(?=\\d)".toRegex())
-//                Log.i(OverlayService.TAG, "split: $hmm, \n length: ${hmm.count()}")
+//                Log.i(FloatingPriceService.TAG, "split: $hmm, \n length: ${hmm.count()}")
 //                val str = "abcd1234"
 //                val part = str.split("(?<=\\D)(?=\\d)".toRegex()).toTypedArray()
-//                Log.i(OverlayService.TAG, "part: $part, \n length: ${part.count()}")3
+//                Log.i(FloatingPriceService.TAG, "part: $part, \n length: ${part.count()}")3
                 stats = urlEncodeUTF8(map)
             }
         }
         else if (resultText.contains("unassigned", ignoreCase = true) ||
             resultText.contains("my club players", ignoreCase = true)
         ) {
-            Log.i(OverlayService.TAG, "this will gather details for multiple players")
+            Log.i(FloatingPriceService.TAG, "this will gather details for multiple players")
 //                                Log.i(TAG, "stats: $strStats")
 
         }
