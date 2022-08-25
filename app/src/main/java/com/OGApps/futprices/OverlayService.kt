@@ -19,11 +19,20 @@ import android.util.Log
 import android.view.*
 import android.widget.ImageView
 import android.widget.Toast
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.io.ByteArrayOutputStream
+import kotlinx.serialization.*
+import kotlinx.serialization.json.Json
+import org.json.JSONObject
+
+
 
 
 class OverlayService() : Service(), View.OnTouchListener, View.OnClickListener {
@@ -416,8 +425,8 @@ callback(result.text)
             var bitmap: Bitmap? = null
             try {
                 if (latestImage != null) {
-                    Toast.makeText(this, "here is where i will screenshot", Toast.LENGTH_SHORT)
-                        .show()
+//                    Toast.makeText(this, "here is where i will screenshot", Toast.LENGTH_SHORT)
+//                        .show()
 
                     Log.i(
                         TAG,
@@ -426,47 +435,19 @@ callback(result.text)
                     bitmap = convertToCroppedBitmap(latestImage)
 //                    bitmap = convertToBitmap(latestImage!!)
 
-//                    results.setImageBitmap(bitmap)
-//                    params = WindowManager.LayoutParams(
-//                        WindowManager.LayoutParams.WRAP_CONTENT / 2,
-//                        WindowManager.LayoutParams.WRAP_CONTENT / 2,
-//                        layoutFlag!!,
-//                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-//                        PixelFormat.TRANSLUCENT
-//                    )
-
                     scanImage(bitmap)
-                    {resultText ->
+                    { resultText ->
                         if (resultText != "") {
                             Log.i(TAG, "resultText: $resultText")
-                            if (resultText.contains("player details", ignoreCase = true) ||
-                                resultText.contains("item details", ignoreCase = true)
-                            ) {
-                                /* example of successful screenshot
-                                *     O 30 A4 14%
-    PLAYER DETAILS
-    472,505 0
-    95
-    ST
-    Arsenal
-    p
-    LACAZETTE
-    94 PAC
-    96 SHO
-    88 PAS
-    95 DRI
-    57 DEF
-    93 PHY
-    POS: ST*/
-
-
-                            } else if (resultText.contains("unassigned", ignoreCase = true) ||
-                                resultText.contains("my club players", ignoreCase = true)
-                            ) {
-                            } else {
+                            val stats = PlayerSearch.getPlayerStats(resultText)
+                            if (stats == "") {
                                 scanFailed(bitmap)
                                 bitmap!!.recycle()
                                 Log.i(TAG, "wrong screen: $resultText")
+                                return@scanImage
+                            }
+                            else{
+                                getFilteredPlayers(stats)
                             }
                         } else {
                             Log.i(TAG, "no text found: $resultText")
@@ -477,7 +458,7 @@ callback(result.text)
                     latestImage.close()
                     IMAGES_PRODUCED++
                 } else {
-                    Toast.makeText(this, "no image found", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "no image found, try again in a few seconds", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -489,63 +470,51 @@ callback(result.text)
         }
     }
 
-//    private fun detectText() {
-//        val keypoint = MatOfKeyPoint()
-//        val listpoint: List<KeyPoint>
-//        var kpoint: KeyPoint
-//        val mask: Mat = Mat.zeros(mGrey.size(), CvType.CV_8UC1)
-//        var rectanx1: Int
-//        var rectany1: Int
-//        var rectanx2: Int
-//        var rectany2: Int
-//        val imgsize: Int = mGrey.height() * mGrey.width()
-//        val zeos = Scalar(0, 0, 0)
-//        val contour2: List<MatOfPoint> = ArrayList()
-//        val kernel = Mat(1, 50, CvType.CV_8UC1, Scalar.all(255.0))
-//        val morbyte = Mat()
-//        val hierarchy = Mat()
-//        var rectan3: Rect
-//        //
-//        val detector: FeatureDetector = FeatureDetector
-//            .create(FeatureDetector.MSER)
-//        detector.detect(mGrey, keypoint)
-//        listpoint = keypoint.toList()
-//        //
-//        for (ind in listpoint.indices) {
-//            kpoint = listpoint[ind]
-//            rectanx1 = (kpoint.pt.x - 0.5 * kpoint.size).toInt()
-//            rectany1 = (kpoint.pt.y - 0.5 * kpoint.size).toInt()
-//            rectanx2 = kpoint.size.toInt()
-//            rectany2 = kpoint.size.toInt()
-//            if (rectanx1 <= 0) rectanx1 = 1
-//            if (rectany1 <= 0) rectany1 = 1
-//            if (rectanx1 + rectanx2 > mGrey.width()) rectanx2 = mGrey.width() - rectanx1
-//            if (rectany1 + rectany2 > mGrey.height()) rectany2 = mGrey.height() - rectany1
-//            val rectant = Rect(rectanx1, rectany1, rectanx2, rectany2)
-//            try {
-//                val roi = Mat(mask, rectant)
-//                roi.setTo(CONTOUR_COLOR)
-//            } catch (ex: java.lang.Exception) {
-//                Log.d("mylog", "mat roi error " + ex.message)
-//            }
-//        }
-//        Imgproc.morphologyEx(mask, morbyte, Imgproc.MORPH_DILATE, kernel)
-//        Imgproc.findContours(
-//            morbyte, contour2, hierarchy,
-//            Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE
-//        )
-//        for (ind in contour2.indices) {
-//            rectan3 = Imgproc.boundingRect(contour2[ind])
-//            rectan3 = Imgproc.boundingRect(contour2[ind])
-//            if (rectan3.area() > 0.5 * imgsize || rectan3.area() < 100 || rectan3.width / rectan3.height < 2) {
-//                val roi = Mat(morbyte, rectan3)
-//                roi.setTo(zeos)
-//            } else Imgproc.rectangle(
-//                mRgba, rectan3.br(), rectan3.tl(),
-//                CONTOUR_COLOR
-//            )
-//        }
-//    }
+    fun getFilteredPlayers(urlParams: String) {
+// Instantiate the RequestQueue.
+        val queue = Volley.newRequestQueue(this)
+        val url = "https://www.futbin.org/futbin/api/getFilteredPlayers?${urlParams}"
+
+// Request a string response from the provided URL.
+
+        val stringRequest = StringRequest(
+            Request.Method.GET, url,
+            { response ->
+                // Display the first 500 characters of the response string.
+                Log.i(TAG, "response here: $response")
+                val help = Response(response)
+                Log.i(TAG, "response help: $help")
+                Toast.makeText(this, "Player: ${help.data?.get(0)?.get("playername")} Price: ${help.data?.get(0)?.get("ps_LCPrice")}", Toast.LENGTH_SHORT).show()
+
+            },
+            {response ->
+                Log.i(TAG, "response error: ${response.message}")
+            })
+        Log.i(TAG, "final url: ${url}")
+
+// Add the request to the RequestQueue.
+        queue.add(stringRequest)
+
+//        val client = HttpClient.newBuilder().build();
+//        val request = HttpRequest.newBuilder()
+//            .uri(URI.create("https://www.futbin.org/futbin/api/getFilteredPlayers?${urlParams}"))
+//            .build();
+//
+//        val response = client.send(request, HttpResponse.BodyHandlers.ofString());
+//        println(response.body())
+    }
+
+    class Response(json: String) : JSONObject(json) {
+        val type: String? = this.optString("type")
+        val data = this.optJSONArray("data")
+            ?.let { 0.until(it.length()).map { i -> it.optJSONObject(i) } } // returns an array of JSONObject
+            ?.map { Foo(it.toString()) } // transforms each JSONObject of the array into Foo
+    }
+
+    class Foo(json: String) : JSONObject(json) {
+        val id = this.optInt("id")
+        val title: String? = this.optString("title")
+    }
 
     private fun startProjection(resultCode: Int, data: Intent) {
         val mpManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
