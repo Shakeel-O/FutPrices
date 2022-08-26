@@ -66,36 +66,30 @@ object PlayerSearch {
                     57 DEF
                     93 PHY
                     POS: ST
+                    * Goal Keeper stat matchups
+                    *                 "pac": 98, DIV
+                "sho": 90, HAN
+                "pas": 90, KIC
+                "dri": 97, REF
+                "def": 63, SPD
+                "phy": 92,POS
                     * https://www.futbin.org/futbin/api/getFilteredPlayers?Passing=99&Pace=96&league=13&position=LW*/
-            val startIndex = resultText.indexOf("PAC") - 3
-            val endIndex = resultText.indexOf("POS") - 1
-            if (startIndex > 0 && endIndex > 0 && startIndex < endIndex) {
-                stats = resultText.substring(startIndex, endIndex)
-                Log.i(FloatingPriceService.TAG, "stats: $stats")
-                map = stats.split("(?<=\\D)(?=\\d)".toRegex()).associateTo(HashMap()) {
-                    val (left, right) = it.split(" ")
-                    right.trim() to left.trim()+','+left.trim()
-                }
-                map.remove("PAC")?.let { map.put("Pace", it) };
-                map.remove("SHO")?.let { map.put("Shooting", it) };
-                map.remove("PAS")?.let { map.put("Passing", it) };
-                map.remove("DRI");
-//                map.remove("DRI")?.let { map.put("Dribbling", it) };
-                map.remove("DEF")?.let { map.put("Defending", it) };
-                map.remove("PHY")?.let { map.put("Physicality", it) };
-                map.remove("PAY")?.let { map.put("Physicality", it) };
+            if (resultText.contains("GK")) {
+                map = parseGoalkeeper(resultText)
+            } else {
+                map = parseOutfielder(resultText)
+            }
 //                map["position"] = resultText.substring(endIndex+6, resultText.count())
-                Log.i(FloatingPriceService.TAG, "map: $map mapString: ${urlEncodeUTF8(map)}")
+            Log.i(FloatingPriceService.TAG, "map: $map mapString: ${urlEncodeUTF8(map)}")
 //                getFilteredPlayers(urlEncodeUTF8(map))
 //                val hmm = stats.split("(?<=\\D)(?=\\d)".toRegex())
 //                Log.i(FloatingPriceService.TAG, "split: $hmm, \n length: ${hmm.count()}")
 //                val str = "abcd1234"
 //                val part = str.split("(?<=\\D)(?=\\d)".toRegex()).toTypedArray()
 //                Log.i(FloatingPriceService.TAG, "part: $part, \n length: ${part.count()}")3
-                stats = urlEncodeUTF8(map)
-            }
-        }
-        else if (resultText.contains("unassigned", ignoreCase = true) ||
+            stats = urlEncodeUTF8(map)
+//            }
+        } else if (resultText.contains("unassigned", ignoreCase = true) ||
             resultText.contains("my club players", ignoreCase = true)
         ) {
             Log.i(FloatingPriceService.TAG, "this will gather details for multiple players")
@@ -106,7 +100,112 @@ object PlayerSearch {
         return stats
     }
 
-    fun urlEncodeUTF8(s: String?): String? {
+    private fun parseOutfielder(resultText: String): HashMap<String, String> {
+        var stats = ""
+        var map: HashMap<String, String>
+        val testValues = arrayOf("PAC","SHO","PAS","DRI","DEF","PHY","PAY")
+        var startIndex = 0
+        var endIndex = 0
+        for (values in testValues) {
+            Log.i(FloatingPriceService.TAG, "about to test: ${values} index: ${resultText.indexOf(values)}")
+            if (resultText.indexOf(values) !=0) {
+                startIndex = if (startIndex< resultText.indexOf(values) && startIndex != 0) startIndex else resultText.indexOf(values)
+                endIndex = if (endIndex> resultText.indexOf(values)) endIndex else resultText.indexOf(values)
+            }
+        }
+        Log.i(FloatingPriceService.TAG, "startindex: ${startIndex} endIndex: $endIndex")
+
+        startIndex -= 3
+        endIndex += 3
+//            val endIndex = resultText.indexOf("POS") - 1
+        if (startIndex > 0 && endIndex > 0 && startIndex < endIndex) {
+            stats = resultText.substring(startIndex, endIndex)
+            Log.i(FloatingPriceService.TAG, "stats: $stats")
+            map = stats.split("(?<=\\D)(?=\\d)".toRegex()).associateTo(HashMap()) {
+                val (left, right) = it.split(" ")
+                right.trim() to left.trim() + ',' + left.trim()
+            }
+            map.remove("PAC")?.let { map.put("Pace", it) };
+            map.remove("SHO")?.let { map.put("Shooting", it) };
+            map.remove("PAS")?.let { map.put("Passing", it) };
+            map.remove("DRI");
+//                map.remove("DRI")?.let { map.put("Dribbling", it) };
+            map.remove("DEF")?.let { map.put("Defending", it) };
+            map.remove("PHY")?.let { map.put("Physicality", it) };
+            map.remove("PAY")?.let { map.put("Physicality", it) };
+        } else {
+            map = stats.split("(?<=\\D)(?=\\d)".toRegex()).associateTo(HashMap()) {
+                val (left, right) = it.split(" ")
+                right.trim() to left.trim() + ',' + left.trim()
+            }
+        }
+        val allowedQuery =
+            arrayOf("Pace", "Shooting", "Passing", "Defending", "Physicality", "Physicality")
+
+        for (values in map) {
+            if (!allowedQuery.contains(values.key)) {
+                Log.i(FloatingPriceService.TAG, "removing: ${values.key}")
+                map.remove(values.key)
+            }
+        }
+        return map
+
+    }
+
+    fun parseGoalkeeper(resultText: String): HashMap<String, String> {
+        var stats = ""
+        var map: HashMap<String, String>
+        val testValues = arrayOf("DIV","HAN","KIC","REF","SPD","POS")
+        var startIndex = 0
+        var endIndex = 0
+        for (values in testValues) {
+            Log.i(FloatingPriceService.TAG, "about to test: ${values} index: ${resultText.indexOf(values)}")
+            if (resultText.indexOf(values) !=0) {
+                startIndex = if (startIndex< resultText.indexOf(values) && startIndex != 0) startIndex else resultText.indexOf(values)
+                endIndex = if (endIndex> resultText.indexOf(values)) endIndex else resultText.indexOf(values)
+            }
+        }
+        Log.i(FloatingPriceService.TAG, "startindex: ${startIndex} endIndex: $endIndex")
+
+        startIndex -= 3
+        endIndex += 3
+        if (startIndex!! > 0 && endIndex!! > 0 && startIndex!! < endIndex!!) {
+            stats = resultText.substring(startIndex, endIndex)
+            Log.i(FloatingPriceService.TAG, "stats: $stats")
+            map = stats.split("(?<=\\D)(?=\\d)".toRegex()).associateTo(HashMap()) {
+                val (left, right) = it.split(" ")
+                right.trim() to left.trim() + ',' + left.trim()
+            }
+
+            map.remove("DIV")?.let { map.put("Pace", it) };
+            map.remove("HAN")?.let { map.put("Shooting", it) };
+            map.remove("KIC")?.let { map.put("Passing", it) };
+//            map.remove("REF").let {map.put("Dribbling",it)}
+            map.remove("REF");
+            map.remove("SPD")?.let { map.put("Defending", it) };
+            map.remove("POS")?.let { map.put("Physicality", it) };
+
+
+        } else {
+            map = stats.split("(?<=\\D)(?=\\d)".toRegex()).associateTo(HashMap()) {
+                val (left, right) = it.split(" ")
+                right.trim() to left.trim() + ',' + left.trim()
+            }
+        }
+        val allowedQuery =
+            arrayOf("Pace", "Shooting", "Passing", "Defending", "Physicality", "Physicality")
+
+        for (values in map) {
+            if (!allowedQuery.contains(values.key)) {
+                Log.i(FloatingPriceService.TAG, "removing: ${values.key}")
+                map.remove(values.key)
+            }
+        }
+        return map
+
+    }
+
+    private fun urlEncodeUTF8(s: String?): String? {
         return try {
             URLEncoder.encode(s, "UTF-8")
         } catch (e: UnsupportedEncodingException) {
@@ -117,7 +216,7 @@ object PlayerSearch {
     private fun urlEncodeUTF8(map: Map<*, *>): String {
         val sb = StringBuilder()
         for ((key, value) in map) {
-            if (sb.length > 0) {
+            if (sb.isNotEmpty()) {
                 sb.append("&")
             }
             sb.append(
