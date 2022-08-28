@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/fut_coin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/fut_player_name"
+        android:layout_below="@+id/fut_player_name"
+        android:layout_marginTop="22dp"
+        android:src="@mipmap/futcoin"
+        tools:ignore="ContentDescription" />
+
+    <TextView
+        android:id="@+id/fut_player_name"
+        android:layout_width="272dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center_vertical"
+        android:lineSpacingExtra="1dp"
+        android:padding="5dp"
+        android:text="name"
+        android:textColor="@color/white"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/fut_price"
+        android:layout_width="228dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/fut_player_name"
+        android:layout_marginTop="19dp"
+        android:layout_toEndOf="@+id/fut_coin"
+        android:gravity="center_vertical"
+        android:lineSpacingExtra="1dp"
+        android:textColor="@color/white"
+        android:padding="5dp"
+        android:text="price"
+        android:autoSizeTextType="uniform"
+
+        android:textStyle="bold" />
+
+</RelativeLayout>

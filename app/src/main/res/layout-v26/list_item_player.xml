@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"/>
+    <TextView
+        android:id="@+id/fut_player_name"
+        android:layout_width="272dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center_vertical"
+        android:lineSpacingExtra="1dp"
+        android:text="name"
+        android:textColor="@color/white"
+        android:autoSizeTextType="uniform"
+        android:breakStrategy="balanced"
+    android:autoSizeMinTextSize="10sp"
+    android:autoSizeMaxTextSize="12sp"
+        android:textStyle="bold" />
+    <ImageView
+        android:id="@+id/fut_coin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/fut_player_name"
+        android:layout_below="@+id/fut_player_name"
+        android:src="@mipmap/futcoin"
+        tools:ignore="ContentDescription" />
+
+    <TextView
+        android:id="@+id/fut_price"
+        android:layout_width="228dp"
+        android:layout_height="30dp"
+        android:layout_below="@+id/fut_player_name"
+        android:layout_toEndOf="@+id/fut_coin"
+        android:layout_alignTop="@id/fut_coin"
+        android:layout_alignBottom="@id/fut_coin"
+        android:gravity="center_vertical"
+        android:lineSpacingExtra="1dp"
+        android:textColor="@color/teal_200"
+        android:autoSizeMinTextSize="10sp"
+        android:autoSizeMaxTextSize="12sp"
+        android:breakStrategy="simple"
+        android:text="price"
+        android:autoSizeTextType="uniform"
+        android:textStyle="bold" />
+
+</RelativeLayout>

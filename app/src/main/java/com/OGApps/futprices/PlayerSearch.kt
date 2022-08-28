@@ -1,5 +1,6 @@
 package com.OGApps.futprices
 
+//import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.client.utils.URLEncodedUtils
 import android.annotation.TargetApi
 import android.app.Notification
 import android.app.NotificationChannel
@@ -7,14 +8,10 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import com.android.volley.Request
-import com.android.volley.Response
-import com.android.volley.toolbox.StringRequest
-import com.android.volley.toolbox.Volley
-//import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.client.utils.URLEncodedUtils
-import java.io.UnsupportedEncodingException
-import java.net.URI
-import java.net.URLEncoder
+import com.google.mlkit.vision.text.Text
+import java.util.stream.Collectors
+import java.util.stream.IntStream
+
 
 object PlayerSearch {
     private const val NOTIFICATION_ID = 1337
@@ -44,71 +41,93 @@ object PlayerSearch {
         }
     }
 
-    fun getPlayerStats(resultText: String): String {
+    fun getPlayerStats(resultText: String): HashMap<String,String> {
         var stats = ""
         var map: HashMap<String,String>
-        if (resultText.contains("player details", ignoreCase = true) ||
-            resultText.contains("item details", ignoreCase = true)
-        ) {
-            /* example of successful screenshot
-            *     O 30 A4 14%
-                    PLAYER DETAILS
-                    472,505 0
-                    95
-                    ST
-                    Arsenal
-                    p
-                    LACAZETTE
-                    94 PAC
-                    96 SHO
-                    88 PAS
-                    95 DRI
-                    57 DEF
-                    93 PHY
-                    POS: ST
-                    * Goal Keeper stat matchups
-                    *                 "pac": 98, DIV
-                "sho": 90, HAN
-                "pas": 90, KIC
-                "dri": 97, REF
-                "def": 63, SPD
-                "phy": 92,POS
-                    * https://www.futbin.org/futbin/api/getFilteredPlayers?Passing=99&Pace=96&league=13&position=LW*/
+
             if (resultText.contains("GK")) {
                 map = parseGoalkeeper(resultText)
             } else {
                 map = parseOutfielder(resultText)
             }
-//                map["position"] = resultText.substring(endIndex+6, resultText.count())
-            Log.i(FloatingPriceService.TAG, "map: $map mapString: ${urlEncodeUTF8(map)}")
-//                getFilteredPlayers(urlEncodeUTF8(map))
-//                val hmm = stats.split("(?<=\\D)(?=\\d)".toRegex())
-//                Log.i(FloatingPriceService.TAG, "split: $hmm, \n length: ${hmm.count()}")
-//                val str = "abcd1234"
-//                val part = str.split("(?<=\\D)(?=\\d)".toRegex()).toTypedArray()
-//                Log.i(FloatingPriceService.TAG, "part: $part, \n length: ${part.count()}")3
-            stats = urlEncodeUTF8(map)
-//            }
-        } else if (resultText.contains("unassigned", ignoreCase = true) ||
-            resultText.contains("my club players", ignoreCase = true)
-        ) {
-            Log.i(FloatingPriceService.TAG, "this will gather details for multiple players")
-//                                Log.i(TAG, "stats: $strStats")
-
-        }
-
-        return stats
+        return map
     }
+
+    fun getMultiplePlayerStats(result: Text): Array<HashMap<String, String>?> {
+        var stats = ""
+        var maps = arrayOfNulls<HashMap<String, String>>(6)
+        if (result.text.contains("PAC SHO PAS DRI DEF PHY")) {
+            var statKeyBlock =
+                result.textBlocks.filter { textBlock -> textBlock.text == "PAC SHO PAS DRI DEF PHY" }
+            Log.i(FloatingPriceService.TAG, "statKeyBlock: $statKeyBlock")
+            var statValueBlock =
+                result.textBlocks.filterIndexed { index, textBlock -> index > 0 && result.textBlocks[index - 1].text == "PAC SHO PAS DRI DEF PHY" }//((i,textblock) ->  { textBlock -> textBlock.text == "PAC SHO PAS DRI DEF PHY" })
+
+            Log.i(FloatingPriceService.TAG, "statValueBlock: $statValueBlock")
+
+            //TODO: create a map of the keys and values in the right format to be searched, iterate over and crearte array
+            var statKeys = mutableListOf<List<String>>()
+            var statValues = mutableListOf<List<String>>()
+            statKeyBlock.forEachIndexed { index, textBlock -> statKeys.add(statKeyBlock[index].text.split(" ")); statValues.add(statValueBlock[index].text.split(" ")) }
+            statKeys.forEachIndexed{index, keys: List<String> ->
+                run {
+                    var map = HashMap<String, String>()
+
+                    keys.forEachIndexed { i, key ->
+                            val stat = statValues[index]
+                        Log.i(FloatingPriceService.TAG, "stat size: ${stat.size}")
+                        if (stat.size == 6) {
+
+                            map[key] = "${stat[i]},${stat[i]}"
+                        }
+
+                    }
+                    map.remove("PAC")?.let { (map).put("Pace", it) };
+                    map.remove("SHO")?.let { (map).put("Shooting", it) };
+                    map.remove("PAS")?.let { (map).put("Passing", it) };
+                    map.remove("DRI")
+                    map.remove("DEF")?.let { (map).put("Defending", it) };
+                    map.remove("PHY")?.let { (map).put("Physicality", it) };
+                    Log.i(FloatingPriceService.TAG, "adding map: $map")
+                    maps[index] = map
+                }
+
+            }
+            Log.i(FloatingPriceService.TAG, "statKeyBlock: $statKeys")
+            Log.i(FloatingPriceService.TAG, "statValueBlock: $statValues")
+            Log.i(FloatingPriceService.TAG, "maps: $maps")
+            for (map in maps) {
+                Log.i(FloatingPriceService.TAG, "checking map: $map")
+            }
+            return maps
+//            if (resultText.contains("GK")) {
+//                map = parseGoalkeeper(resultText)
+//            } else {
+//                map = parseOutfielder(resultText)
+//            }
+//    return zipToMap(statTitle,stat)
+        }
+        return maps
+    }
+
+    fun <K, V> zipToMap(keys: List<K>, values: List<V>): HashMap<K, V>? {
+        val keyIter = keys.iterator()
+        val valIter = values.iterator()
+        return HashMap(IntStream.range(0, keys.size).boxed()
+            .collect(Collectors.toMap({ _i -> keyIter.next() }) { _i -> valIter.next() }))
+    }
+
 
     private fun parseOutfielder(resultText: String): HashMap<String, String> {
         var stats = ""
-        var map: HashMap<String, String>
+
+        var map = HashMap<String, String>()
         val testValues = arrayOf("PAC","SHO","PAS","DRI","DEF","PHY","PAY")
         var startIndex = 0
         var endIndex = 0
         for (values in testValues) {
             Log.i(FloatingPriceService.TAG, "about to test: ${values} index: ${resultText.indexOf(values)}")
-            if (resultText.indexOf(values) !=0) {
+            if (resultText.indexOf(values) > 0) {
                 startIndex = if (startIndex< resultText.indexOf(values) && startIndex != 0) startIndex else resultText.indexOf(values)
                 endIndex = if (endIndex> resultText.indexOf(values)) endIndex else resultText.indexOf(values)
             }
@@ -117,7 +136,6 @@ object PlayerSearch {
 
         startIndex -= 3
         endIndex += 3
-//            val endIndex = resultText.indexOf("POS") - 1
         if (startIndex > 0 && endIndex > 0 && startIndex < endIndex) {
             stats = resultText.substring(startIndex, endIndex)
             Log.i(FloatingPriceService.TAG, "stats: $stats")
@@ -125,27 +143,35 @@ object PlayerSearch {
                 val (left, right) = it.split(" ")
                 right.trim() to left.trim() + ',' + left.trim()
             }
-            map.remove("PAC")?.let { map.put("Pace", it) };
-            map.remove("SHO")?.let { map.put("Shooting", it) };
-            map.remove("PAS")?.let { map.put("Passing", it) };
-            map.remove("DRI");
-//                map.remove("DRI")?.let { map.put("Dribbling", it) };
-            map.remove("DEF")?.let { map.put("Defending", it) };
-            map.remove("PHY")?.let { map.put("Physicality", it) };
-            map.remove("PAY")?.let { map.put("Physicality", it) };
+            map.remove("PAC")?.let { map.put("Pace", it) }
+            map.remove("SHO")?.let { map.put("Shooting", it) }
+            map.remove("PAS")?.let { map.put("Passing", it) }
+            map.remove("DRI")
+//                map.remove("DRI")?.let { map.put("Dribbling", it) }
+            map.remove("DEF")?.let { map.put("Defending", it) }
+            map.remove("PHY")?.let { map.put("Physicality", it) }
+            map.remove("PAY")?.let { map.put("Physicality", it) }
         } else {
-            map = stats.split("(?<=\\D)(?=\\d)".toRegex()).associateTo(HashMap()) {
-                val (left, right) = it.split(" ")
-                right.trim() to left.trim() + ',' + left.trim()
-            }
+//            map = stats.split("(?<=\\D)(?=\\d)".toRegex()).associateTo(HashMap()) {
+//                val (left, right) = it.split(" ")
+//                right.trim() to left.trim() + ',' + left.trim()
+//            }
         }
         val allowedQuery =
             arrayOf("Pace", "Shooting", "Passing", "Defending", "Physicality", "Physicality")
 
-        for (values in map) {
-            if (!allowedQuery.contains(values.key)) {
-                Log.i(FloatingPriceService.TAG, "removing: ${values.key}")
-                map.remove(values.key)
+//        for (values in map) {
+//            if (!allowedQuery.contains(values.key)) {
+//                Log.i(FloatingPriceService.TAG, "removing: ${values.key}")
+//                map.remove(values.key)
+//            }
+//        }
+        val iter: MutableIterator<Map.Entry<String, String>> = map.entries.iterator()
+        while (iter.hasNext()) {
+            val (key, value) = iter.next()
+            Log.i(FloatingPriceService.TAG, "removing: ${key} or $value")
+            if (!allowedQuery.contains(key)) {
+                iter.remove()
             }
         }
         return map
@@ -177,59 +203,49 @@ object PlayerSearch {
                 right.trim() to left.trim() + ',' + left.trim()
             }
 
-            map.remove("DIV")?.let { map.put("Pace", it) };
-            map.remove("HAN")?.let { map.put("Shooting", it) };
-            map.remove("KIC")?.let { map.put("Passing", it) };
-//            map.remove("REF").let {map.put("Dribbling",it)}
-            map.remove("REF");
-            map.remove("SPD")?.let { map.put("Defending", it) };
-            map.remove("POS")?.let { map.put("Physicality", it) };
-
+            map.remove("DIV")?.let { map.put("Pace", it) }
+            map.remove("HAN")?.let { map.put("Shooting", it) }
+            map.remove("KIC")?.let { map.put("Passing", it) }
+//            map.remove("REF").let {map.put("Dribbling",it)
+            map.remove("REF")
+            map.remove("SPD")?.let { map.put("Defending", it) }
+            map.remove("POS")?.let { map.put("Physicality", it) }
 
         } else {
-            map = stats.split("(?<=\\D)(?=\\d)".toRegex()).associateTo(HashMap()) {
-                val (left, right) = it.split(" ")
-                right.trim() to left.trim() + ',' + left.trim()
-            }
+            map = emptyMap<String, String>() as HashMap<String, String>
         }
         val allowedQuery =
             arrayOf("Pace", "Shooting", "Passing", "Defending", "Physicality", "Physicality")
 
-        for (values in map) {
-            if (!allowedQuery.contains(values.key)) {
-                Log.i(FloatingPriceService.TAG, "removing: ${values.key}")
-                map.remove(values.key)
+        val iter: MutableIterator<Map.Entry<String, String>> = map.entries.iterator()
+        while (iter.hasNext()) {
+            val (key, value) = iter.next()
+            Log.i(FloatingPriceService.TAG, "removing: ${key} or $value")
+            if (!allowedQuery.contains(key)) {
+                iter.remove()
             }
         }
+
         return map
-
     }
 
-    private fun urlEncodeUTF8(s: String?): String? {
-        return try {
-            URLEncoder.encode(s, "UTF-8")
-        } catch (e: UnsupportedEncodingException) {
-            throw UnsupportedOperationException(e)
+
+    fun multiplePlayers(resultText: String): Boolean? {
+        if (resultText.contains("player details", ignoreCase = true) ||
+            resultText.contains("item details", ignoreCase = true)||
+            resultText.contains("tem details", ignoreCase = true)
+        ) {
+            return false
+        } else if (resultText.contains("unassigned", ignoreCase = true) ||
+            resultText.contains("my club players", ignoreCase = true)||
+            resultText.contains("transfer list", ignoreCase = true)
+        ) {
+            Log.i(FloatingPriceService.TAG, "this will gather details for multiple players")
+//                                Log.i(TAG, "stats: $strStats")
+            return true
+
         }
+        return null
     }
-
-    private fun urlEncodeUTF8(map: Map<*, *>): String {
-        val sb = StringBuilder()
-        for ((key, value) in map) {
-            if (sb.isNotEmpty()) {
-                sb.append("&")
-            }
-            sb.append(
-                String.format(
-                    "%s=%s",
-                    urlEncodeUTF8(key.toString()),
-                    urlEncodeUTF8(value.toString())
-                )
-            )
-        }
-        return sb.toString()
-    }
-
-    fun String.utf8(): String = URLEncoder.encode(this, "UTF-8")
 
 }
