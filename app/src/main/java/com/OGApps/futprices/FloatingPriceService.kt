@@ -2,15 +2,16 @@ package com.OGApps.futprices
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.Service
 import android.content.ContentValues
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
-import android.icu.text.NumberFormat
 import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
@@ -20,17 +21,11 @@ import android.util.Log
 import android.view.*
 import android.widget.ImageView
 import android.widget.ListView
-import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
-import com.android.volley.Request
-import com.android.volley.toolbox.StringRequest
-import com.android.volley.toolbox.Volley
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 
 class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListener  {
@@ -43,24 +38,24 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
 
             val result = recognizer.process(inputImage)
                 .addOnSuccessListener { result ->
-                    for (block in result.textBlocks) {
-                        val blockText = block.text
-                        val blockCornerPoints = block.cornerPoints
-                        val blockFrame = block.boundingBox
-                        Log.i(TAG, "processed image: $inputImage \b blocktext: ${blockText}")
-
-                        for (line in block.lines) {
-                            val lineText = line.text
-                            val lineCornerPoints = line.cornerPoints
-                            val lineFrame = line.boundingBox
-                            Log.i(TAG, "processed image: $inputImage \b lineText: ${lineText}")
-                            for (element in line.elements) {
-                                val elementText = element.text
-                                val elementCornerPoints = element.cornerPoints
-                                val elementFrame = element.boundingBox
-                            }
-                        }
-                    }
+//                    for (block in result.textBlocks) {
+//                        val blockText = block.text
+//                        val blockCornerPoints = block.cornerPoints
+//                        val blockFrame = block.boundingBox
+//                        Log.i(TAG, "processed image: $inputImage \b blocktext: $blockText")
+//
+//                        for (line in block.lines) {
+//                            val lineText = line.text
+//                            val lineCornerPoints = line.cornerPoints
+//                            val lineFrame = line.boundingBox
+//                            Log.i(TAG, "processed image: $inputImage \b lineText: ${lineText}")
+//                            for (element in line.elements) {
+//                                val elementText = element.text
+//                                val elementCornerPoints = element.cornerPoints
+//                                val elementFrame = element.boundingBox
+//                            }
+//                        }
+//                    }
                     Log.i(TAG, "processed image: $inputImage \b visionText: ${result.text}")
                     callback(result)
 
@@ -144,23 +139,29 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         val START = "START"
         val STOP = "STOP"
         val SCREENCAP_NAME = "screencap"
+        var overlayActive = false
         internal var imageReader: ImageReader? = null
         private var mediaProjection: MediaProjection? = null
         private var mHandler: Handler? = null
         private var virtualDisplay: VirtualDisplay? = null
         private var IMAGES_PRODUCED = 0
-        private var mWidth = 0
-        private var mHeight = 0
+        var mWidth = 0
+        var mHeight = 0
         private var initialised = false
 
         @SuppressLint("StaticFieldLeak")
         lateinit var results: ImageView
-        var image: Image? = null
+        lateinit var image: Image
     }
     val expandedView: View?
         get() {
             return mFloatingWidget?.findViewById<View>(R.id.expanded_container)
         }
+    val collapsedView: View?
+        get() {
+            return mFloatingWidget?.findViewById<View>(R.id.collapse_view)
+        }
+
     private lateinit var playerListView: ListView
 
     var layoutFlag: Int? = null
@@ -240,7 +241,7 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         overlayIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         var currSize: Int
         var currQuality = 100
-        val maxSizeBytes = 1400000
+        val maxSizeBytes = 1000000
 
 
         do {
@@ -248,10 +249,11 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
             currSize = stream.toByteArray().size
             // limit quality by 5 percent every time
             currQuality -= 5
-        } while (currSize >= maxSizeBytes)
+        } while (currSize >= maxSizeBytes && currQuality  >50)
         val byteArray: ByteArray = stream.toByteArray()
-        overlayIntent.putExtra("image", byteArray)
+//        overlayIntent.putExtra("image", byteArray)
         startActivity(overlayIntent)
+//        bitmap.recycle()
     }
 
     fun getPlayerDetails(result: Text) {
@@ -318,6 +320,8 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
 
     override fun onCreate() {
         super.onCreate()
+//        windowManager.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+
         mFloatingWidget = LayoutInflater.from(this).inflate(R.layout.layout_floating_price, null)
         val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -339,10 +343,27 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         windowManager!!.addView(mFloatingWidget, params)
-        val collapsedView = mFloatingWidget?.findViewById<View>(R.id.collapse_view)
+        PlayerSearch.appContext = applicationContext
         val closeButtonCollapsed = mFloatingWidget?.findViewById<View>(R.id.close_btn) as ImageView
         playerListView = mFloatingWidget!!.findViewById<ListView>(R.id.player_list_view)
-        closeButtonCollapsed.setOnClickListener { stopSelf() }
+        closeButtonCollapsed.setOnClickListener {
+//            AlertDialog.Builder(this)
+//                .setTitle("Title")
+//                .setMessage("Do you really want to whatever?")
+//                .setIcon(android.R.drawable.ic_dialog_alert)
+//                .setPositiveButton(R.string.next) { dialogInterface: DialogInterface, i: Int ->
+////                    Toast.makeText(this@MainActivity, "Yaay", Toast.LENGTH_SHORT).show()
+//                                stopSelf()
+//
+//                }
+//                .setNegativeButton(android.R.string.cancel){ dialogInterface: DialogInterface, i: Int ->
+////                    Toast.makeText(this@MainActivity, "Yaay", Toast.LENGTH_SHORT).show()
+//                }.show()
+////            stopSelf()
+
+//            MainActivity().openDialog()
+            ConfirmDialog().show(MainActivity().supportFragmentManager, "MyCustomFragment")
+        }
         val closeButton = mFloatingWidget?.findViewById<View>(R.id.close_button) as ImageView
         closeButton.setOnClickListener {
             collapsedView?.visibility = View.VISIBLE
@@ -369,10 +390,10 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
                         MotionEvent.ACTION_UP -> {
                             Log.i(TAG, "onTouch, action up moving $moving")
                             if (!moving && !longClick) {
-                                if (isViewCollapsed) {
-                                    collapsedView?.visibility = View.GONE
-                                    expandedView?.visibility = View.VISIBLE
-                                }
+//                                if (isViewCollapsed) {
+//                                    collapsedView?.visibility = View.GONE
+//                                    expandedView?.visibility = View.VISIBLE
+//                                }
                                 v!!.performClick()
                             }
                             moving = false
@@ -384,7 +405,7 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
                         MotionEvent.ACTION_MOVE -> {
                             val xDifference = (params.x - (initialX - (event.rawX.minus(initialTouchX))))
                             val yDifference = (params.y - (initialY - (event.rawY.minus(initialTouchY))))
-                            if (xDifference < 100 && xDifference > -100 && yDifference < 100 && yDifference > -100)
+                            if (xDifference < 50 && xDifference > -50 && yDifference < 50 && yDifference > -50)
                             {
                                 moving = false
                                 Log.i(TAG, "onTouch,action move accidental")
@@ -421,123 +442,44 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
     }
 
     override fun onClick(p0: View?) {
-        if (!moving) {
+        if (!moving && !overlayActive) {
+            image = imageReader?.acquireNextImage()!!
             Log.i(TAG, "onClick: $image")
-            val latestImage: Image? = imageReader?.acquireNextImage()
             var bitmap: Bitmap? = null
             try {
-                if (latestImage != null) {
+                if (image != null) {
 //                    Toast.makeText(this, "here is where i will screenshot", Toast.LENGTH_SHORT)
 //                        .show()
 
                     Log.i(
                         TAG,
-                        "heres the screenshot image: $latestImage"
+                        "heres the screenshot image: $image"
                     )
-                    bitmap = convertToCroppedBitmap(latestImage)
+                    bitmap = convertToCroppedBitmap(image)
 //                    bitmap = convertToBitmap(latestImage!!)
 
                     scanImage(bitmap)
                     { result ->
-                        val resultText = result.text
-                        if (resultText != "") {
-                            Log.i(TAG, "resultText: $resultText")
-                            val multiScan = PlayerSearch.multiplePlayers(resultText)
-                            if (multiScan != null) {
-                                if (!PlayerSearch.multiplePlayers(resultText)!!) {
-                                    val stats = PlayerSearch.getPlayerStats(resultText)
-                                    Log.i(FloatingPriceService.TAG, "parsing stats: $stats")
-
-                                    if (stats.isEmpty()) {
-                                        scanFailed(bitmap)
-                                        bitmap.recycle()
-                                        Log.i(TAG, "wrong screen: $resultText")
-                                        return@scanImage
-                                    } else {
-                                        getFilteredPlayers( ParseURL.urlEncodeUTF8(stats)){help :JSONObject ->
-                                            val playerList = arrayOfNulls<Player>(1)
-                                            val player = Player.getPlayer(help)
-                                            playerList[0] = player
-                                            val adapter = PlayerAdapter(this, playerList)
-                                            playerListView.adapter = adapter
-
-                                            Toast.makeText(
-                                                this,
-                                                "Player: ${player.name} \nPrice: ${player.price}",Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                } else {
-                                    scanImage(convertToBitmap(latestImage))
-                                    {resultTextFull ->
-
-//                                        val stats = PlayerSearch.getMultiplePlayerStats(resultTextFull)
-                                        var uncheckedMap = PlayerSearch.getMultiplePlayerStats(resultTextFull)
-                                        var maps = uncheckedMap.filter { map -> map != null }.toTypedArray()
-                                        val playerList = arrayOfNulls<Player>(maps.size)
-                                        maps.forEachIndexed {i,map ->
-                                            Log.i(FloatingPriceService.TAG, "parsing map: $map & ${map != null} & index: $i & size: ${maps.size}")
-
-                                            if (map != null) {
-                                                getFilteredPlayers(ParseURL.urlEncodeUTF8(map)) { help: JSONObject ->
-                                                    Log.i(TAG, "getting player with : $help")
-
-                                                    val player = Player.getPlayer(help)
-                                                    Log.i(TAG, "player acquired : $player")
-                                                    Log.i(TAG, "adding to playerList: $player")
-
-                                                    playerList[i] = player
-
-                                                    for (map2 in playerList) {
-                                                        Log.i(FloatingPriceService.TAG, "checking playerList: $map2")
-                                                    }
-                                                    Toast.makeText(
-                                                        this,
-                                                        "Player: ${player.name} \nPrice: ${player.price}",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                    if (playerList.filterNotNull().size == maps.size) {
-                                                        val adapter =
-                                                            PlayerAdapter(this, playerList)
-                                                        playerListView.adapter = adapter
-                                                    }
-
-                                                }
-
-                                                for (map in playerList) {
-                                                    Log.i(FloatingPriceService.TAG, "checking playerList: $map")
-                                                }
-                                                Log.i(
-                                                    FloatingPriceService.TAG,
-                                                    "adding adapter with: $playerList and ${playerList.size}"
-                                                )
-
-                                            }
-                                        }
-                                    }
-//                                    val stats: Array<HashMap<String, String>> = stats = PlayerSearch.getPlayersStats(resultText)
-//                                    for (stat in stats)
-//                                    {
-//                                        getFilteredPlayers(ParseURL.urlEncodeUTF8(stats))
-//                                    }
-                                }
-                            }
-                            else
+                        if (!PlayerSearch.searchPlayer(result, image, playerListView))
+                        {
+                            bitmap = convertToBitmap(image)
+                            if (!overlayActive)
                             {
-                                scanFailed(bitmap)
-                                bitmap.recycle()
-                                Log.i(TAG, "wrong screen: $resultText")
-                                return@scanImage
+                                scanFailed(bitmap!!)
                             }
-                        } else {
-                            Log.i(TAG, "no text found: $resultText")
-                            scanFailed(bitmap)
-                            bitmap.recycle()
-                        }
-                        Log.i(TAG, "isViewCollapsed: $isViewCollapsed")
+                            bitmap!!.recycle()
+//                            image.close()
+//                            showCollapsed(true)
+                            collapsedView?.visibility = View.VISIBLE
+                            expandedView?.visibility = View.GONE
 
+//                            Log.i(FloatingPriceService.TAG, "wrong screen: $resultText")
+                        }
+                        else {
+//                            showExpanded(true)
                             expandedView?.visibility = View.VISIBLE
-                        latestImage.close()
+                        }
+
                     }
                     IMAGES_PRODUCED++
                 } else {
@@ -568,49 +510,10 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         Toast.makeText(this,"long clicked", Toast.LENGTH_SHORT).show()
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
-    fun getFilteredPlayers(urlParams: String, callback: (JSONObject) -> Unit) {
-
-// Instantiate the RequestQueue.
-        val queue = Volley.newRequestQueue(this)
-        val url = "https://www.futbin.org/futbin/api/getFilteredPlayers?${urlParams}"
-
-// Request a string response from the provided URL.
-
-        val stringRequest = StringRequest(
-            Request.Method.GET, url,
-            { response ->
-                Log.i(TAG, "response here: $response")
-                val help = FloatingPriceService.Response(response)
-                Log.i(TAG, "response help: $help")
-                callback(help)
-
-            },
-            { response ->
-                Log.i(TAG, "response error: ${response.message}")
-            })
-        Log.i(TAG, "final url: ${url}")
-
-        // Add the request to the RequestQueue.
-        queue.add(stringRequest)
-
-    }
-
     private fun displayResults(response: String?) {
 
     }
 
-    class Response(json: String) : JSONObject(json) {
-        val type: String? = this.optString("type")
-        val data = this.optJSONArray("data")
-            ?.let { 0.until(it.length()).map { i -> it.optJSONObject(i) } } // returns an array of JSONObject
-            ?.map { Foo(it.toString()) } // transforms each JSONObject of the array into Foo
-    }
-
-    class Foo(json: String) : JSONObject(json) {
-        val id = this.optInt("id")
-        val title: String? = this.optString("title")
-    }
     private fun startProjection(resultCode: Int, data: Intent) {
         val mpManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         if (mediaProjection == null) {
@@ -732,3 +635,4 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         TODO("Not yet implemented")
     }
 }
+

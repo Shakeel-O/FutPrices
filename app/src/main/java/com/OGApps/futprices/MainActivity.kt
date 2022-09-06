@@ -15,17 +15,19 @@ import android.provider.Settings
 import android.util.Log
 import android.view.Display
 import android.view.Menu
+import android.view.WindowManager
 import android.widget.Button
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import com.OGApps.futprices.databinding.ActivityMainBinding
 import org.opencv.android.OpenCVLoader
 import java.util.*
 
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
 
     companion object {
@@ -57,7 +59,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        OpenCVLoader.initDebug()
+//        OpenCVLoader.initDebug()
+        // hide overlay from screen shots/records
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE
+        )
         mainActivity = ActivityMainBinding.inflate(layoutInflater)
         setContentView(mainActivity.root)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -71,6 +78,7 @@ class MainActivity : ComponentActivity() {
         val startButton = findViewById<Button>(R.id.start_service)
 
         startButton.setOnClickListener {
+            
             getPermissions()
             startProjection()
 
@@ -121,6 +129,11 @@ class MainActivity : ComponentActivity() {
         }
 
     }
+
+    fun openDialog() {
+
+        }
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun startProjection() {

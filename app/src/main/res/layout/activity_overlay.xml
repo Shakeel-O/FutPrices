@@ -12,28 +12,42 @@
         android:id="@+id/textInvalid"
         android:layout_width="305dp"
         android:layout_height="48dp"
-        android:text="@string/invalid_screenshot"
-        android:textSize="34sp" />
+        android:text="@string/invalid_screen"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        android:textSize="30sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/textSubtitle"
+        android:layout_width="376dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textInvalid"
+        android:layout_marginEnd="4dp"
+        android:layout_marginTop="13dp"
+        android:text="Could not detect player stats screen."
+        android:textSize="19sp" />
 
     <TextView
         android:id="@+id/textDetails"
         android:layout_width="376dp"
-        android:layout_height="354dp"
-        android:layout_below="@+id/textInvalid"
-        android:layout_marginBottom="29dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textSubtitle"
         android:layout_marginEnd="4dp"
         android:layout_marginTop="13dp"
         android:layout_toStartOf="@+id/currentScreenshot"
-        android:text="could not detect player stats. \n please ensure you are on the FIFA 22 Companion App and it says player details at the top of the  screen" />
+        android:text="Please ensure that:\n\n\u2022 You are on the FIFA 22 Companion App\n\u2022 You are on a players screen\n\u2022 The players stats are clearly visible and isn't covered by the overlay"
+        android:textSize="19sp" />
 
     <ImageView
         android:id="@+id/currentScreenshot"
         android:layout_width="119dp"
         android:layout_height="223dp"
         android:layout_alignParentEnd="true"
-        android:layout_below="@+id/textInvalid"
-        android:layout_marginEnd="2dp"
-        android:layout_marginTop="63dp"
+        android:layout_below="@+id/textSubtitle"
+        android:layout_above="@id/btnClose"
+        android:layout_marginEnd="5dp"
+        android:layout_centerVertical="true"
         android:contentDescription="@string/screenshot"
         android:scaleType="fitEnd" />
 
@@ -41,10 +55,9 @@
         android:id="@+id/btnClose"
         android:layout_width="138dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
         android:layout_below="@+id/textDetails"
-        android:layout_marginEnd="298dp"
-        android:layout_marginTop="1dp"
+        android:layout_marginTop="10dp"
+        android:layout_centerHorizontal="true"
         android:text="@string/close" />
 
 

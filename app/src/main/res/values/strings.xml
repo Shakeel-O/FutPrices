@@ -15,7 +15,7 @@
     <string name="recording">Recording</string>
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
     <string name="title_activity_main">Main</string>
-    <string name="invalid_screenshot">Invalid Screenshot</string>
+    <string name="invalid_screen">Invalid Screen</string>
     <string name="screenshot">Screenshot</string>
     <string name="close">Close</string>
 </resources>
