@@ -2,11 +2,10 @@ package com.OGApps.futprices
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.AlertDialog
+import android.app.Dialog
 import android.app.Service
 import android.content.ContentValues
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
@@ -19,6 +18,7 @@ import android.media.projection.MediaProjectionManager
 import android.os.*
 import android.util.Log
 import android.view.*
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.ListView
 import android.widget.Toast
@@ -27,6 +27,7 @@ import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.io.ByteArrayOutputStream
+import kotlin.system.exitProcess
 
 class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListener  {
     companion object {
@@ -152,15 +153,18 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         @SuppressLint("StaticFieldLeak")
         lateinit var results: ImageView
         lateinit var image: Image
+
+        private var mFloatingWidget: View? = null
+        val expandedView: View?
+            get() {
+                return mFloatingWidget?.findViewById<View>(R.id.expanded_container)
+            }
+        val collapsedView: View?
+            get() {
+                return mFloatingWidget?.findViewById<View>(R.id.collapse_view)
+            }
     }
-    val expandedView: View?
-        get() {
-            return mFloatingWidget?.findViewById<View>(R.id.expanded_container)
-        }
-    val collapsedView: View?
-        get() {
-            return mFloatingWidget?.findViewById<View>(R.id.collapse_view)
-        }
+
 
     private lateinit var playerListView: ListView
 
@@ -313,7 +317,6 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
             }
         }
     }
-    private var mFloatingWidget: View? = null
     override fun onBind(intent: Intent): IBinder? {
         return null
     }
@@ -328,7 +331,7 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         } else {
             WindowManager.LayoutParams.TYPE_PHONE
         }
-        val params = WindowManager.LayoutParams(
+        var params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutFlag,
@@ -347,22 +350,9 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         val closeButtonCollapsed = mFloatingWidget?.findViewById<View>(R.id.close_btn) as ImageView
         playerListView = mFloatingWidget!!.findViewById<ListView>(R.id.player_list_view)
         closeButtonCollapsed.setOnClickListener {
-//            AlertDialog.Builder(this)
-//                .setTitle("Title")
-//                .setMessage("Do you really want to whatever?")
-//                .setIcon(android.R.drawable.ic_dialog_alert)
-//                .setPositiveButton(R.string.next) { dialogInterface: DialogInterface, i: Int ->
-////                    Toast.makeText(this@MainActivity, "Yaay", Toast.LENGTH_SHORT).show()
-//                                stopSelf()
-//
-//                }
-//                .setNegativeButton(android.R.string.cancel){ dialogInterface: DialogInterface, i: Int ->
-////                    Toast.makeText(this@MainActivity, "Yaay", Toast.LENGTH_SHORT).show()
-//                }.show()
-////            stopSelf()
-
-//            MainActivity().openDialog()
-            ConfirmDialog().show(MainActivity().supportFragmentManager, "MyCustomFragment")
+            val confirmIntent: Intent = Intent(this, ConfirmDialog::class.java)
+            confirmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(confirmIntent)
         }
         val closeButton = mFloatingWidget?.findViewById<View>(R.id.close_button) as ImageView
         closeButton.setOnClickListener {
@@ -440,6 +430,7 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
 
         launchIntent?.let { startActivity(it) }
     }
+
 
     override fun onClick(p0: View?) {
         if (!moving && !overlayActive) {

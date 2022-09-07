@@ -2,5 +2,6 @@
 <resources>
     <style name="OverlayDialog" parent="Theme.AppCompat.DayNight.Dialog">
         <item name="windowNoTitle">true</item>
+        <item name="android:windowBackground">@drawable/round_corner</item>
     </style>
 </resources>

@@ -9,11 +9,24 @@
     android:focusable="false"
     tools:context=".MainActivity">
 
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="50sp"
+        android:layout_marginTop="50sp"
+        android:lineSpacingExtra="8sp"
+        android:text="Welcome to FUT Prices"
+        android:textAlignment="center"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/start_service"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/start"
+        android:background="@drawable/round_corner"
         android:textSize="20sp" />
 
     <androidx.appcompat.widget.AppCompatButton

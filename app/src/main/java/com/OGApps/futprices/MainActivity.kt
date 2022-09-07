@@ -32,14 +32,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         var mDisplay: Display? = null
-//        private lateinit var context: Context
-//
-//        fun setContext(con: Context) {
-//            context=con
-//        }
-//        fun getContext(): Context {
-//            return context
-//        }
     }
 
     private lateinit var mainActivity: ActivityMainBinding
@@ -82,28 +74,6 @@ class MainActivity : AppCompatActivity() {
             getPermissions()
             startProjection()
 
-//            val intent = Intent()
-//            intent.setPackage("com.ea.gp.fifaultimate")
-//
-//            val pm: PackageManager = packageManager
-//            val resolveInfos: List<ResolveInfo> = pm.queryIntentActivities(intent, 0)
-//            Collections.sort(resolveInfos, ResolveInfo.DisplayNameComparator(pm))
-//            Log.i(TAG, "fifa package resolve: $resolveInfos ")
-//
-//            if (resolveInfos.isNotEmpty()) {
-//                val launchable: ResolveInfo = resolveInfos[0]
-//                val activity: ActivityInfo = launchable.activityInfo
-//                val name = ComponentName(
-//                    activity.applicationInfo.packageName,
-//                    activity.name
-//                )
-//                val i = Intent(Intent.ACTION_MAIN)
-//                i.flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-//                        Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
-//                i.component = name
-//                Log.i(TAG, "fifa package: $i ")
-//                startActivity(i)
-//            }
         }
         val stopButton = findViewById<Button>(R.id.stop_service)
         stopButton.setOnClickListener {
@@ -130,11 +100,6 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun openDialog() {
-
-        }
-
-
     @RequiresApi(Build.VERSION_CODES.O)
     private fun startProjection() {
         mediaProjectionManager = getSystemService(Service.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -143,7 +108,7 @@ class MainActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun stopProjection() {
-//        startMediaProjection.unregister()
+        startMediaProjection.unregister()
         stopService(FloatingPriceService.getStopIntent(this))
     }
 }

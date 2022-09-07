@@ -4,20 +4,39 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.DialogFragment
+import kotlin.system.exitProcess
 
-class ConfirmDialog : DialogFragment() {
+class ConfirmDialog : AppCompatActivity() {
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        getDialog()!!.getWindow()?.setBackgroundDrawableResource(R.drawable.round_corner);
-        return inflater.inflate(R.layout.layout_dialog, container, false)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.layout_dialog)
+        val btnConfirm = findViewById<Button>(R.id.btn_confirm)
+        val btnCancel = findViewById<Button>(R.id.btn_cancel)
+
+        btnConfirm.setOnClickListener {
+            exitProcess(0)
+        }
+
+        btnCancel.setOnClickListener {
+            finish()
+        }
     }
+
 
     override fun onStart() {
         super.onStart()
-        val width = (resources.displayMetrics.widthPixels * 0.85).toInt()
-        val height = (resources.displayMetrics.heightPixels * 0.40).toInt()
-        dialog!!.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        FloatingPriceService.collapsedView?.visibility = View.GONE
+        FloatingPriceService.overlayActive = true
+    }
+
+    override fun onStop() {
+        FloatingPriceService.collapsedView?.visibility = View.VISIBLE
+        FloatingPriceService.overlayActive = false
+        super.onStop()
     }
 
 }

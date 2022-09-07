@@ -2,10 +2,16 @@ package com.OGApps.futprices
 
 import android.graphics.Bitmap
 import android.media.Image
+import android.opengl.Visibility
 import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import com.OGApps.futprices.FloatingPriceService.Companion.collapsedView
 import com.OGApps.futprices.FloatingPriceService.Companion.image
+import kotlin.system.exitProcess
 
 class OverlayActivity : AppCompatActivity() {
     lateinit var bmp: Bitmap
@@ -34,18 +40,24 @@ class OverlayActivity : AppCompatActivity() {
         val imageView = findViewById<ImageView>(R.id.currentScreenshot)
 
         imageView.setImageBitmap(bmp)
-//        imageView.setimage
-
+        val btnClose = findViewById<Button>(R.id.btnClose)
+        btnClose.setOnClickListener{ v ->
+            Log.i("overlay fail screen", "onCreate: finishing ")
+            finish()
+        }
     }
 
 
     override fun onStart() {
         super.onStart()
+        collapsedView?.visibility = View.GONE
+
         FloatingPriceService.overlayActive = true
     }
 
     override fun onStop() {
         super.onStop()
+        collapsedView?.visibility = View.VISIBLE
         FloatingPriceService.overlayActive = false
     }
 
