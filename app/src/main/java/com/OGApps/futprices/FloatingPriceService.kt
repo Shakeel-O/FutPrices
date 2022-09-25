@@ -2,11 +2,8 @@ package com.OGApps.futprices
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.Dialog
 import android.app.Service
-import android.content.ContentValues
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.res.Resources
 import android.graphics.*
 import android.hardware.display.DisplayManager
@@ -15,10 +12,10 @@ import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
+import android.net.Uri
 import android.os.*
 import android.util.Log
 import android.view.*
-import android.widget.Button
 import android.widget.ImageView
 import android.widget.ListView
 import android.widget.Toast
@@ -27,7 +24,6 @@ import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.io.ByteArrayOutputStream
-import kotlin.system.exitProcess
 
 class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListener  {
     companion object {
@@ -216,9 +212,9 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
                         TAG,
                         "heres the image: $image1"
                     )
-                    bitmap = convertToCroppedBitmap(image1)
-
-                    scanImage(bitmap){}
+//                    bitmap = convertToCroppedBitmap(image1)
+//
+//                    scanImage(bitmap){}
 
 
 
@@ -255,38 +251,7 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
             currQuality -= 5
         } while (currSize >= maxSizeBytes && currQuality  >50)
         val byteArray: ByteArray = stream.toByteArray()
-//        overlayIntent.putExtra("image", byteArray)
         startActivity(overlayIntent)
-//        bitmap.recycle()
-    }
-
-    fun getPlayerDetails(result: Text) {
-        for (block in result.textBlocks) {
-            val blockText = block.text
-            val blockCornerPoints = block.cornerPoints
-            val blockFrame = block.boundingBox
-            //TODO: find index of block containing 'pac' 'sho' 'pas' etc. split them up. get index before for name, index after for position
-            Log.i(TAG+"results", "blockText: $blockText")
-            val array = arrayOf(blockText)
-//                if ()
-//                {
-//                    return
-//                }
-            for (line in block.lines) {
-                val lineText = line.text
-                val lineCornerPoints = line.cornerPoints
-                val lineFrame = line.boundingBox
-                Log.i(TAG+"results", "lineText: $lineText")
-
-                for (element in line.elements) {
-                    val elementText = element.text
-                    val elementCornerPoints = element.cornerPoints
-                    val elementFrame = element.boundingBox
-                    Log.i(TAG+"results", "elementText: $elementText")
-
-                }
-            }
-        }
     }
 
     fun getPlayerDetailsList(result: Text) {
@@ -331,7 +296,7 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         } else {
             WindowManager.LayoutParams.TYPE_PHONE
         }
-        var params = WindowManager.LayoutParams(
+        val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutFlag,
@@ -347,18 +312,43 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         windowManager!!.addView(mFloatingWidget, params)
         PlayerSearch.appContext = applicationContext
+        playerListView = mFloatingWidget!!.findViewById(R.id.player_list_view)
+        playerListView.setOnItemClickListener { parent, view: View, position, id ->
+            val player = parent.getItemAtPosition(position) as Player
+            val textToCopy = player.price
+            Toast.makeText(applicationContext, "Copied:\n${player.price}", Toast.LENGTH_SHORT)
+                .show()
+            val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clipData = ClipData.newPlainText("text", textToCopy)
+            clipboardManager.setPrimaryClip(clipData)
+        }
+        playerListView.isLongClickable = true
+        playerListView.setOnItemLongClickListener { parent, view, position, id ->
+            val player = parent.getItemAtPosition(position) as Player
+            val playerId = player.id
+            Toast.makeText(applicationContext, "switching to futbin", Toast.LENGTH_SHORT)
+                .show()
+            val browserIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://www.futbin.com/23/player/$playerId")
+            )
+            browserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(browserIntent)
+            return@setOnItemLongClickListener true
+        }
         val closeButtonCollapsed = mFloatingWidget?.findViewById<View>(R.id.close_btn) as ImageView
-        playerListView = mFloatingWidget!!.findViewById<ListView>(R.id.player_list_view)
         closeButtonCollapsed.setOnClickListener {
             val confirmIntent: Intent = Intent(this, ConfirmDialog::class.java)
             confirmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(confirmIntent)
         }
+
         val closeButton = mFloatingWidget?.findViewById<View>(R.id.close_button) as ImageView
         closeButton.setOnClickListener {
             collapsedView?.visibility = View.VISIBLE
             expandedView?.visibility = View.GONE
         }
+
         val rootContainer = mFloatingWidget?.findViewById<View>(R.id.root_container)
             rootContainer?.setOnTouchListener(object : View.OnTouchListener {
                 private var initialX = 0
@@ -424,11 +414,6 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
                 }
             })
         rootContainer?.setOnClickListener(this)
-        //start fifa companion app
-        val launchIntent = packageManager.getLaunchIntentForPackage("com.ea.gp.fifaultimate")
-        Log.i(ContentValues.TAG, "fifa package: $launchIntent ")
-
-        launchIntent?.let { startActivity(it) }
     }
 
 
@@ -447,7 +432,7 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
                         "heres the screenshot image: $image"
                     )
                     bitmap = convertToCroppedBitmap(image)
-//                    bitmap = convertToBitmap(latestImage!!)
+//                    bitmap = convertToBitmap(image)
 
                     scanImage(bitmap)
                     { result ->
@@ -484,9 +469,9 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
             } finally {
                 Log.i(TAG, "isViewCollapsed: $isViewCollapsed")
 
-                if (isViewCollapsed) {
-                    expandedView?.visibility = View.VISIBLE
-                }
+//                if (isViewCollapsed) {
+//                    expandedView?.visibility = View.VISIBLE
+//                }
                 if (bitmap != null) {
 //                    bitmap!!.recycle()
                 }
@@ -566,7 +551,6 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
             val handlerThread = HandlerThread("HandlerThread")
             handlerThread.start()
             handler =Handler(handlerThread.looper)
-
 
 
         } else if (isStopCommand(intent)) {

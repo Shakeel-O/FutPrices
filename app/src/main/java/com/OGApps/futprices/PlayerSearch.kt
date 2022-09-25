@@ -65,19 +65,41 @@ object PlayerSearch {
     fun getMultiplePlayerStats(result: Text): Array<HashMap<String, String>?> {
         var stats = ""
         var maps = arrayOfNulls<HashMap<String, String>>(6)
-        if (result.text.contains("PAC SHO PAS DRI DEF PHY") || result.text.contains("DIV HAN KIC REF SPD POS")) {
+        if (result.text.contains("((\\s?)+[A-Z]{3}){6}".toRegex())) {
+            // check regex matches 6 3 letter words
+            val keyRegex = "((\\s?)[A-Z]{3}){6}".toRegex()
+            // check regex matches 6 2 digit numbers
+            val valueRegex = "((\\s?)[0-9]{2}){6}".toRegex()
             var statKeyBlock =
-                result.textBlocks.filter { textBlock -> textBlock.text == "PAC SHO PAS DRI DEF PHY" || textBlock.text == "DIV HAN KIC REF SPD POS" }
+                result.textBlocks.filter { textBlock -> textBlock.text.contains(keyRegex) } as MutableList
             Log.i(FloatingPriceService.TAG, "statKeyBlock: $statKeyBlock")
             var statValueBlock =
-                result.textBlocks.filterIndexed { index, _ -> index > 0 && (result.textBlocks[index - 1].text == "PAC SHO PAS DRI DEF PHY" || result.textBlocks[index - 1].text == "DIV HAN KIC REF SPD POS") }//((i,textblock) ->  { textBlock -> textBlock.text == "PAC SHO PAS DRI DEF PHY" })
+                result.textBlocks.filter{ textBlock -> textBlock.text.contains(valueRegex) } as MutableList
 
             Log.i(FloatingPriceService.TAG, "statValueBlock: $statValueBlock")
+            result.textBlocks.forEachIndexed { index, textBlock ->
 
-            //TODO: create a map of the keys and values in the right format to be searched, iterate over and crearte array
+                Log.i(FloatingPriceService.TAG, "block number $index: ${textBlock.text}") }
+            while (statKeyBlock.size > statValueBlock.size)
+            {
+                statKeyBlock.removeLast()
+            }
+            while (statKeyBlock.size < statValueBlock.size)
+            {
+                statValueBlock.removeLast()
+            }
+            //TODO: create a map of the keys and values in the right format to be searched, iterate over and create array
             var statKeys = mutableListOf<List<String>>()
             var statValues = mutableListOf<List<String>>()
-            statKeyBlock.forEachIndexed { index, textBlock -> statKeys.add(statKeyBlock[index].text.split(" ")); statValues.add(statValueBlock[index].text.split(" ")) }
+            statKeyBlock.forEachIndexed { index, textBlock ->
+                Log.i(FloatingPriceService.TAG, "textBlock before: ${textBlock.text}")
+                keyRegex.find(statKeyBlock[index].text)?.value?.let {
+                    statKeys.add(it.split(" "))
+                }
+                valueRegex.find(statValueBlock[index].text)?.value?.let { statValues.add(it.split(" ")) }
+                Log.i(FloatingPriceService.TAG, "textBlock after: ${keyRegex.find(statKeyBlock[index].text)?.value}")
+
+            }
             statKeys.forEachIndexed{index, keys: List<String> ->
                 run {
                     var map = HashMap<String, String>()
@@ -103,6 +125,7 @@ object PlayerSearch {
                     map.remove("KIC")?.let { (map).put("Passing", it) };
                     map.remove("REF")
                     map.remove("SPD")?.let { (map).put("Defending", it) };
+                    map.remove("SPP")?.let { (map).put("Defending", it) };
                     map.remove("POS")?.let { (map).put("Physicality", it) };
                     Log.i(FloatingPriceService.TAG, "adding map: $map")
                     maps[index] = map
@@ -125,7 +148,7 @@ object PlayerSearch {
         var stats = ""
 
         var map = HashMap<String, String>()
-        val testValues = arrayOf("PAC","SHO","PAS","DRI","DEF","PHY","PAY")
+        val testValues = arrayOf(" PAC"," SHO"," PAS"," DRI"," DEF"," PHY"," PAY")
         var startIndex = 0
         var endIndex = 0
         for (values in testValues) {
@@ -137,8 +160,8 @@ object PlayerSearch {
         }
         Log.i(FloatingPriceService.TAG, "startindex: ${startIndex} endIndex: $endIndex")
 
-        startIndex -= 3
-        endIndex += 3
+        startIndex -= 2
+        endIndex += 4
         if (startIndex > 0 && endIndex > 0 && startIndex < endIndex) {
             stats = resultText.substring(startIndex, endIndex)
             Log.i(FloatingPriceService.TAG, "stats: $stats")
@@ -219,6 +242,7 @@ object PlayerSearch {
 //            map.remove("REF").let {map.put("Dribbling",it)
             map.remove("REF")
             map.remove("SPD")?.let { map.put("Defending", it) }
+            map.remove("SPP")?.let { (map).put("Defending", it) };
             map.remove("POS")?.let { map.put("Physicality", it) }
 
         } else {
@@ -241,19 +265,26 @@ object PlayerSearch {
 
 
     fun multiplePlayers(resultText: String): Boolean? {
-        if (resultText.contains("unassigned", ignoreCase = true) ||
-            resultText.contains("my club players", ignoreCase = true)||
-            resultText.contains("transfer list", ignoreCase = true) ||
-            resultText.contains("player bio", ignoreCase = true)
+
+        val regex = "((\\s?)+[0-9]{2}\\s[A-Z]{3}){6}".toRegex()
+        val matches = regex.findAll(resultText)
+        var matchCount = 0
+        matches.forEach { f ->
+            matchCount++
+            val m = f.value
+            val idx = f.range
+            println("$m found at indexes: $idx")
+            Log.i(FloatingPriceService.TAG, "$m found at indexes: $idx")
+
+        }
+        Log.i(FloatingPriceService.TAG, "$matchCount matches found")
+        if (resultText.contains("PAC SHO PAS DRI DEF PHY") || resultText.contains("DIV HAN KIC REF SPD POS")
         ) {
             Log.i(FloatingPriceService.TAG, "this will gather details for multiple players")
 //                                Log.i(TAG, "stats: $strStats")
             return true
 
-        } else if (resultText.contains("player details", ignoreCase = true) ||
-            resultText.contains("item details", ignoreCase = true)||
-            resultText.contains("tem details", ignoreCase = true)
-        ) {
+        } else if (matchCount == 1) {
             return false
         }
         return null
@@ -263,6 +294,7 @@ object PlayerSearch {
         val resultText = result.text
         if (resultText != "") {
             Log.i(FloatingPriceService.TAG, "resultText: $resultText")
+
             val multiScan = multiplePlayers(resultText)
             if (multiScan != null) {
                 // TODO: account for goalkeepers during multisearch

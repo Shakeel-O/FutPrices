@@ -39,7 +39,7 @@ object NotificationUtils {
 
     private fun createNotification(context: Context): Notification {
         val builder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-        builder.setSmallIcon(R.mipmap.fut_prices)
+        builder.setSmallIcon(R.mipmap.fut_prices_logo)
         builder.setContentTitle(context.getString(R.string.app_name))
         builder.setContentText(context.getString(R.string.recording))
         builder.setOngoing(true)

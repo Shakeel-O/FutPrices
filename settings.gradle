@@ -14,4 +14,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = "FUT Prices"
 include ':app'
-include ':opencv'

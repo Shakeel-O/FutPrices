@@ -6,7 +6,8 @@ import org.json.JSONObject
 
 class Player(
     val name: String,
-    val price: String) {
+    val price: String,
+    val id: Int) {
 
     companion object {
 
@@ -18,11 +19,12 @@ class Player(
 //                val json = JSONObject(jsonString)
                 val data = playerJSON.getJSONArray("data")
 
-                // Get Recipe objects from data
+                // Get right objects from data
             player = Player(
                 data.getJSONObject(0).getString("playername"),
                 if (data.getJSONObject(0).getString("ps_LCPrice") == "null")
-                    "0" else "%,d".format(data.getJSONObject(0).getInt("ps_LCPrice"))
+                    "0" else "%,d".format(data.getJSONObject(0).getInt("ps_LCPrice")),
+                data.getJSONObject(0).getInt("ID")
             )
 
 
