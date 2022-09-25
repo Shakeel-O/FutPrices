@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
@@ -7,35 +7,189 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:focusable="false"
+    android:background="#673AB7"
     tools:context=".MainActivity">
+    <ImageView
+        android:id="@+id/imgspiral"
+        android:layout_width="300sp"
+        android:layout_height="300sp"
+        android:layout_marginTop="-50sp"
+        android:layout_marginBottom="-300sp"
+        android:layout_marginStart="-80sp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/transparent_dots" />
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/txtWelcome"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="50sp"
-        android:layout_marginTop="50sp"
+        android:layout_marginTop="160sp"
         android:lineSpacingExtra="8sp"
-        android:text="Welcome to FUT Prices"
+        android:layout_below="@id/imgspiral"
+        android:textColor="#ffff"
+        android:text="Welcome to"
         android:textAlignment="center"
         android:textSize="20sp"
-        android:textStyle="bold" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/start_service"
+        android:textStyle="bold"
+        />
+    <TextView
+        android:id="@+id/txtfutPrices"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/start"
-        android:background="@drawable/round_corner"
-        android:textSize="20sp" />
+        android:lineSpacingExtra="8sp"
+        android:textColor="#fff"
+        android:layout_marginBottom="20sp"
+        android:text="FUT Prices"
+        android:textAlignment="center"
+        android:textSize="50sp"
+        android:textStyle="bold"
+        android:layout_below="@id/txtWelcome"
+        />
+<LinearLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_below="@id/layReqPerms">
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/stop_service"
+    <ImageView
+        android:id="@+id/imgLvlUp"
+        android:layout_width="100sp"
+        android:layout_height="200sp"
+        app:srcCompat="@drawable/level_up" />
+    <ImageView
+        android:id="@+id/imgcropped"
+        android:layout_width="200sp"
+        android:layout_height="200sp"
+        android:layout_marginTop="-240sp"
+        android:layout_marginStart="0sp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/cropped" />
+    <ImageView
+        android:id="@+id/imgorangecircle"
+        android:layout_width="400sp"
+        android:layout_height="400sp"
+        android:layout_marginTop="-210sp"
+        android:layout_marginStart="60sp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/orangecircle" />
+</LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/layReqPerms"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/stop"
-        android:textSize="20sp" />
+        android:layout_below="@+id/txtfutPrices"
+        android:background="@drawable/round_corner_white">
 
-</androidx.appcompat.widget.LinearLayoutCompat>
+        <TableRow
+            android:id="@+id/tbrOpenChoice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/btnScreenCap"
+            android:layout_centerHorizontal="true">
+
+            <CheckBox
+                android:id="@+id/cBoxWeb"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/purple_200"
+                android:text="Open WebApp"
+                android:textColor="#000000" />
+
+            <CheckBox
+                android:id="@+id/cBoxComp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/purple_200"
+                android:outlineSpotShadowColor="@color/black"
+                android:text="Open Companion App"
+                android:textColor="#000000" />
+        </TableRow>
+
+        <TextView
+            android:id="@+id/txtDrawOverlay"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/txtReqPerms"
+            android:layout_marginEnd="10sp"
+            android:layout_marginStart="75sp"
+            android:layout_marginTop="50sp"
+            android:text="Draw Overlays"
+            android:textColor="#000000" />
+
+        <TextView
+            android:id="@+id/txtScreenCap"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/txtDrawOverlay"
+            android:layout_marginEnd="10sp"
+            android:layout_marginStart="75sp"
+            android:layout_marginTop="20sp"
+            android:text="Screen Capture"
+            android:textColor="#000000" />
+
+        <TextView
+            android:id="@+id/txtReqPerms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Required Permissions"
+            android:textAlignment="center"
+            android:textColor="#000"
+            android:textStyle="bold" />
+
+        <ToggleButton
+            android:id="@+id/btnScreenCap"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/btnDrawOverlay"
+            android:layout_toRightOf="@id/txtScreenCap"
+            android:text="ToggleButton" />
+
+        <ToggleButton
+            android:id="@+id/btnDrawOverlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="50sp"
+            android:layout_toEndOf="@id/txtDrawOverlay"
+            android:text="ToggleButton" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_below="@id/txtReqPerms"
+            android:layout_marginBottom="50sp"
+            android:layout_marginTop="2sp"
+            android:background="@android:color/darker_gray" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/start_service"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tbrOpenChoice"
+            android:layout_marginBottom="10sp"
+            android:layout_marginTop="20sp"
+            android:background="@drawable/round_corner"
+            android:gravity="center_horizontal"
+            android:text="@string/start"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/btnHowTo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/start_service"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="10sp"
+            android:background="@drawable/round_corner_white"
+            android:text="FAQ"
+            android:textStyle="bold"
+            android:textColor="#303F9F"
+            android:textSize="20sp" />
+
+    </RelativeLayout>
+
+
+
+</RelativeLayout>
 
 

@@ -37,13 +37,15 @@
         android:layout_below="@+id/fut_player_name"
         android:layout_marginTop="19dp"
         android:layout_toEndOf="@+id/fut_coin"
+        android:autoSizeTextType="uniform"
+        android:clickable="false"
         android:gravity="center_vertical"
         android:lineSpacingExtra="1dp"
-        android:textColor="@color/white"
         android:padding="5dp"
-        android:text="price"
-        android:autoSizeTextType="uniform"
 
+        android:phoneNumber="false"
+        android:text="price"
+        android:textColor="@color/white"
         android:textStyle="bold" />
 
 </RelativeLayout>

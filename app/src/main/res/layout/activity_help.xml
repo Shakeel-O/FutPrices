@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    xmlns:tools="http://schemas.android.com/tools"-->
+<!--    android:id="@+id/container"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="match_parent"-->
+<!--    tools:context=".HelpActivity" />-->
+<!--<androidx.viewpager2.widget.ViewPager2-->
+<!--    xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    android:id="@+id/pager"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="match_parent" />-->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:app="http://schemas.android.com/apk/res-auto"
+xmlns:tools="http://schemas.android.com/tools"
+android:id="@+id/main"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:orientation="vertical"
+android:focusable="false"
+android:background="#673AB7"
+    tools:context=".HelpActivity"
+>
+<ImageView
+    android:id="@+id/imgspiral"
+    android:layout_width="300sp"
+    android:layout_height="300sp"
+    android:layout_marginTop="-50sp"
+    android:layout_marginBottom="-300sp"
+    android:layout_marginStart="-80sp"
+    android:scaleType="fitXY"
+    app:srcCompat="@drawable/transparent_dots" />
+
+<TextView
+    android:id="@+id/txtFaq"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:lineSpacingExtra="8sp"
+    android:textColor="#fff"
+    android:layout_marginBottom="20sp"
+    android:text="FAQ"
+    android:textAlignment="center"
+    android:textSize="50sp"
+    android:textStyle="bold"
+    android:layout_marginTop="50dp"
+    />
+<LinearLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_below="@id/faq_container">
+
+    <ImageView
+        android:id="@+id/imgLvlUp"
+        android:layout_width="100sp"
+        android:layout_height="200sp"
+        app:srcCompat="@drawable/level_up" />
+    <ImageView
+        android:id="@+id/imgcropped"
+        android:layout_width="200sp"
+        android:layout_height="200sp"
+        android:layout_marginTop="-240sp"
+        android:layout_marginStart="0sp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/cropped" />
+    <ImageView
+        android:id="@+id/imgorangecircle"
+        android:layout_width="400sp"
+        android:layout_height="400sp"
+        android:layout_marginTop="-210sp"
+        android:layout_marginStart="60sp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/orangecircle" />
+</LinearLayout>
+    <RelativeLayout
+        android:id="@+id/faq_container"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_marginTop="50dp"
+        android:layout_below="@+id/txtFaq"
+        android:background="@drawable/round_corner_white">
+        <ExpandableListView
+            android:id="@+id/expandableListView"
+            android:groupIndicator="@color/black"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:indicatorLeft="?android:attr/expandableListPreferredItemIndicatorLeft"
+            android:divider="@android:color/darker_gray"
+            android:dividerHeight="0.5dp" />
+    </RelativeLayout>
+
+
+
+</RelativeLayout>
