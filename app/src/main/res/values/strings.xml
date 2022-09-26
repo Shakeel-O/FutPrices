@@ -2,27 +2,10 @@
     <string name="app_name">FUT Prices</string>
     <string name="action_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
-    <string name="first_fragment_label">First Fragment</string>
-    <string name="second_fragment_label">Second Fragment</string>
-    <string name="next">Next</string>
-    <string name="previous">Previous</string>
 
-    <string name="hello_first_fragment">Hello first fragment</string>
-    <string name="greeting">Welcome to Futprices, here we will scan your EA Sports Fifa app</string>
-    <string name="click_to_open">Click to open</string>
     <string name="start">Start</string>
-    <string name="stop">Stop</string>
     <string name="recording">Recording</string>
-    <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
-    <string name="title_activity_main">Main</string>
     <string name="invalid_screen">Invalid Screen</string>
     <string name="screenshot">Screenshot</string>
     <string name="close">Close</string>
-    <string name="lorem_ipsum">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lectus metus, vehicula id libero finibus, euismod facilisis arcu. Maecenas auctor purus sollicitudin felis tincidunt, ac tincidunt libero condimentum. Nullam ultrices ex at arcu dignissim gravida. Maecenas mattis iaculis congue. Morbi auctor turpis maximus lacus viverra, in molestie libero pulvinar. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Phasellus orci diam, imperdiet commodo libero in, auctor dapibus mi. Nam convallis justo eu erat dictum eleifend. Mauris efficitur iaculis convallis. Mauris tristique massa a maximus auctor. Sed vitae tellus in ligula convallis tristique.
-
-Quisque ultrices augue et massa pulvinar, sit amet ultrices elit rutrum. Aliquam erat volutpat. Sed in massa eget lacus lobortis luctus. Nulla lacinia lobortis elit nec rhoncus. In eu condimentum sapien. Fusce facilisis a arcu sit amet auctor. Nullam eget pretium nisi, eget egestas felis. In sagittis orci vel tellus consequat tincidunt. Cras rutrum vitae libero rhoncus vestibulum. Integer pulvinar, mauris vitae maximus rhoncus, orci mi sagittis tellus, sed porta magna turpis iaculis lacus. Suspendisse elit metus, lobortis eu mattis vel, porta sit amet mauris. Aliquam eget dictum ex. Fusce cursus bibendum augue, a cursus dui mollis vitae. Ut rutrum justo eget nunc faucibus, et auctor mauris lobortis. Nunc ornare porttitor lacus, at vulputate massa. Donec at feugiat mauris, in convallis tellus.
-
-Mauris egestas felis euismod, elementum nisl vel, convallis mi. Duis eget metus in lorem blandit dignissim. Proin hendrerit, augue eget pharetra mollis, massa nisi molestie leo, nec ornare augue ipsum ac lectus. Donec condimentum lacus vel euismod dictum. In tempor diam mi, sit amet gravida felis auctor id. Nulla nec facilisis libero, quis rhoncus velit. Curabitur pellentesque aliquam massa, eget congue augue efficitur quis.
-
-</string>
 </resources>

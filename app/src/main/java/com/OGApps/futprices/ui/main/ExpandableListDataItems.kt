@@ -13,14 +13,19 @@ object ExpandableListDataItems {
             val q3: MutableList<String> = ArrayList()
             q3.add("This App should work for Android 8 (Oreo) and later")
             val q4: MutableList<String> = ArrayList()
-            q3.add("This App should work for Android 8 (Oreo) and later")
+            q4.add("When you long press on a player that you have scanned, you will be redirected to their futbin webpage")
             val q5: MutableList<String> = ArrayList()
-            q3.add("This App should work for Android 8 (Oreo) and later")
+            q5.add("Tap on a scanned player and the price will be copied to your clipboard")
+            val q6: MutableList<String> = ArrayList()
+            q6.add("No as this app is only compatible with the latest FIFA webapp")
 
             // Assign questions to answers
             expandableDetailList["Is my phone Compatible with this app?"] = q3
             expandableDetailList["How do I capture the correct price?"] = q2
             expandableDetailList["Why can't I press the start button?"] = q1
+            expandableDetailList["Can I view more information about the player?"] = q4
+            expandableDetailList["Do I have to manually type in the price every time?"] = q5
+            expandableDetailList["Can I use this app for previous versions of FIFA?"] = q6
             return expandableDetailList
         }
 }

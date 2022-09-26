@@ -25,43 +25,22 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.io.ByteArrayOutputStream
 
-class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListener  {
+class FloatingPriceService : Service(), View.OnClickListener  {
     companion object {
 
         fun scanImage(bitmap: Bitmap, callback: (Text) -> Unit) {
             val inputImage = InputImage.fromBitmap(bitmap, 0)
-            var failed = false
             val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-            val result = recognizer.process(inputImage)
+            recognizer.process(inputImage)
                 .addOnSuccessListener { result ->
-//                    for (block in result.textBlocks) {
-//                        val blockText = block.text
-//                        val blockCornerPoints = block.cornerPoints
-//                        val blockFrame = block.boundingBox
-//                        Log.i(TAG, "processed image: $inputImage \b blocktext: $blockText")
-//
-//                        for (line in block.lines) {
-//                            val lineText = line.text
-//                            val lineCornerPoints = line.cornerPoints
-//                            val lineFrame = line.boundingBox
-//                            Log.i(TAG, "processed image: $inputImage \b lineText: ${lineText}")
-//                            for (element in line.elements) {
-//                                val elementText = element.text
-//                                val elementCornerPoints = element.cornerPoints
-//                                val elementFrame = element.boundingBox
-//                            }
-//                        }
-//                    }
-                    Log.i(TAG, "processed image: $inputImage \b visionText: ${result.text}")
+//                    Log.i(TAG, "processed image: $inputImage \b visionText: ${result.text}")
                     callback(result)
 
                 }
                 .addOnFailureListener { e ->
-                    Log.e(TAG, "processing image failed: $IMAGES_PRODUCED$inputImage")
                     Log.e(TAG, "processing image error: $e")
                 }
-//            Log.i(TAG, "other method: ${result.result}")
         }
 
         internal fun getStopIntent(context: Context?): Intent {
@@ -129,13 +108,13 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         }
 
 
-        val TAG = "FloatingPriceService"
-        val RESULT_CODE = "RESULT_CODE"
-        val DATA = "DATA"
-        val ACTION = "ACTION"
-        val START = "START"
-        val STOP = "STOP"
-        val SCREENCAP_NAME = "screencap"
+        const val TAG = "FloatingPriceService"
+        const val RESULT_CODE = "RESULT_CODE"
+        const val DATA = "DATA"
+        const val ACTION = "ACTION"
+        const val START = "START"
+        const val STOP = "STOP"
+        const val SCREENCAP_NAME = "screencap"
         var overlayActive = false
         internal var imageReader: ImageReader? = null
         private var mediaProjection: MediaProjection? = null
@@ -153,22 +132,20 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         private var mFloatingWidget: View? = null
         val expandedView: View?
             get() {
-                return mFloatingWidget?.findViewById<View>(R.id.expanded_container)
+                return mFloatingWidget?.findViewById(R.id.expanded_container)
             }
         val collapsedView: View?
             get() {
-                return mFloatingWidget?.findViewById<View>(R.id.collapse_view)
+                return mFloatingWidget?.findViewById(R.id.collapse_view)
             }
     }
 
 
     private lateinit var playerListView: ListView
 
-    var layoutFlag: Int? = null
     private lateinit var windowManager: WindowManager
     private lateinit var gIntent: Intent
 
-    private lateinit var params: WindowManager.LayoutParams
     private var moving = false
     private var longClick = false
 
@@ -200,44 +177,10 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         return intent.hasExtra(ACTION) && intent.getStringExtra(ACTION) == STOP
     }
 
-    private class ImageAvailableListener : ImageReader.OnImageAvailableListener {
-        override fun onImageAvailable(reader: ImageReader) {
-            var bitmap: Bitmap? = null
-            image = reader.acquireLatestImage()
-            try {
-
-                val image1 = image
-                if (image1 != null) {
-                    Log.i(
-                        TAG,
-                        "heres the image: $image1"
-                    )
-//                    bitmap = convertToCroppedBitmap(image1)
-//
-//                    scanImage(bitmap){}
-
-
-
-
-                    IMAGES_PRODUCED++
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                image?.close()
-                if (bitmap != null) {
-                    bitmap.recycle()
-                }
-            }
-        }
-
-    }
-
     private fun scanFailed(bitmap: Bitmap) {
         //Convert to byte array
-        Toast.makeText(this, "scan failed", Toast.LENGTH_SHORT).show()
         val stream = ByteArrayOutputStream()
-        val overlayIntent: Intent = Intent(this, OverlayActivity::class.java)
+        val overlayIntent = Intent(this, OverlayActivity::class.java)
         overlayIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         var currSize: Int
         var currQuality = 100
@@ -250,45 +193,16 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
             // limit quality by 5 percent every time
             currQuality -= 5
         } while (currSize >= maxSizeBytes && currQuality  >50)
-        val byteArray: ByteArray = stream.toByteArray()
+//        val byteArray: ByteArray = stream.toByteArray()
         startActivity(overlayIntent)
     }
 
-    fun getPlayerDetailsList(result: Text) {
-        for (block in result.textBlocks) {
-            val blockText = block.text
-            val blockCornerPoints = block.cornerPoints
-            val blockFrame = block.boundingBox
-            //TODO: find index of block containing 'pac' 'sho' 'pas' etc. split them up. get index before for name, index after for position
-            Log.i("results", "blockText: $blockText")
-            val array = arrayOf(blockText)
-//                if ()
-//                {
-//                    return
-//                }
-            for (line in block.lines) {
-                val lineText = line.text
-                val lineCornerPoints = line.cornerPoints
-                val lineFrame = line.boundingBox
-                Log.i("results", "lineText: $lineText")
-
-                for (element in line.elements) {
-                    val elementText = element.text
-                    val elementCornerPoints = element.cornerPoints
-                    val elementFrame = element.boundingBox
-                    Log.i("results", "elementText: $elementText")
-
-                }
-            }
-        }
-    }
     override fun onBind(intent: Intent): IBinder? {
         return null
     }
 
     override fun onCreate() {
         super.onCreate()
-//        windowManager.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
 
         mFloatingWidget = LayoutInflater.from(this).inflate(R.layout.layout_floating_price, null)
         val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -304,16 +218,16 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.TOP or Gravity.END
-        val height: Int = Resources.getSystem().getDisplayMetrics().heightPixels;
+        val height: Int = Resources.getSystem().displayMetrics.heightPixels
 
         params.x = 0
         params.y = height/2
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        windowManager!!.addView(mFloatingWidget, params)
+        windowManager.addView(mFloatingWidget, params)
         PlayerSearch.appContext = applicationContext
         playerListView = mFloatingWidget!!.findViewById(R.id.player_list_view)
-        playerListView.setOnItemClickListener { parent, view: View, position, id ->
+        playerListView.setOnItemClickListener { parent, _: View, position, _ ->
             val player = parent.getItemAtPosition(position) as Player
             val textToCopy = player.price
             Toast.makeText(applicationContext, "Copied:\n${player.price}", Toast.LENGTH_SHORT)
@@ -323,22 +237,20 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
             clipboardManager.setPrimaryClip(clipData)
         }
         playerListView.isLongClickable = true
-        playerListView.setOnItemLongClickListener { parent, view, position, id ->
+        playerListView.setOnItemLongClickListener { parent, _, position, _ ->
             val player = parent.getItemAtPosition(position) as Player
             val playerId = player.id
-            Toast.makeText(applicationContext, "switching to futbin", Toast.LENGTH_SHORT)
-                .show()
             val browserIntent = Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse("https://www.futbin.com/23/player/$playerId")
             )
-            browserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            browserIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(browserIntent)
             return@setOnItemLongClickListener true
         }
         val closeButtonCollapsed = mFloatingWidget?.findViewById<View>(R.id.close_btn) as ImageView
         closeButtonCollapsed.setOnClickListener {
-            val confirmIntent: Intent = Intent(this, ConfirmDialog::class.java)
+            val confirmIntent = Intent(this, ConfirmDialog::class.java)
             confirmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(confirmIntent)
         }
@@ -363,23 +275,16 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
                             initialTouchX = event.rawX
                             initialTouchY = event.rawY
                             handler?.postDelayed(mLongPressed, ViewConfiguration.getLongPressTimeout().toLong())
-                            Log.i(TAG, "onTouch, action down moving $moving")
-
                             return true
                         }
                         MotionEvent.ACTION_UP -> {
-                            Log.i(TAG, "onTouch, action up moving $moving")
                             if (!moving && !longClick) {
-//                                if (isViewCollapsed) {
-//                                    collapsedView?.visibility = View.GONE
-//                                    expandedView?.visibility = View.VISIBLE
-//                                }
-                                v!!.performClick()
+                                v.performClick()
                             }
                             moving = false
                             longClick = false
 
-                            handler?.removeCallbacks(mLongPressed);
+                            handler?.removeCallbacks(mLongPressed)
                             return true
                         }
                         MotionEvent.ACTION_MOVE -> {
@@ -388,20 +293,8 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
                             if (xDifference < 50 && xDifference > -50 && yDifference < 50 && yDifference > -50)
                             {
                                 moving = false
-                                Log.i(TAG, "onTouch,action move accidental")
                             }else{
-                                Log.i(TAG, "onTouch,action move moving $moving")
-                                Log.i(
-                                    TAG,
-                                    "onTouch,action move x ${params.x} > ${initialX - (event.rawX - initialTouchX)}"
-                                )
-                                Log.i(
-                                    TAG,
-                                    "onTouch,action move y ${params.y} > ${initialY - (event.rawY - initialTouchY)}"
-                                )
-//                Log.i(TAG, "onTouch,action move y $moving")
-
-                                handler?.removeCallbacks(mLongPressed);
+                                handler?.removeCallbacks(mLongPressed)
                                 moving = true
                                 params.x = initialX - (event.rawX - initialTouchX).toInt()
                                 params.y = initialY + (event.rawY - initialTouchY).toInt()
@@ -421,74 +314,44 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
         if (!moving && !overlayActive) {
             image = imageReader?.acquireNextImage()!!
             Log.i(TAG, "onClick: $image")
-            var bitmap: Bitmap? = null
+            var bitmap: Bitmap?
             try {
-                if (image != null) {
-//                    Toast.makeText(this, "here is where i will screenshot", Toast.LENGTH_SHORT)
-//                        .show()
-
-                    Log.i(
-                        TAG,
-                        "heres the screenshot image: $image"
-                    )
-                    bitmap = convertToCroppedBitmap(image)
+                bitmap = convertToCroppedBitmap(image)
 //                    bitmap = convertToBitmap(image)
 
-                    scanImage(bitmap)
-                    { result ->
-                        if (!PlayerSearch.searchPlayer(result, image, playerListView))
+                scanImage(bitmap)
+                { result ->
+                    if (!PlayerSearch.searchPlayer(result, image, playerListView))
+                    {
+                        bitmap = convertToBitmap(image)
+                        if (!overlayActive)
                         {
-                            bitmap = convertToBitmap(image)
-                            if (!overlayActive)
-                            {
-                                scanFailed(bitmap!!)
-                            }
-                            bitmap!!.recycle()
-//                            image.close()
-//                            showCollapsed(true)
-                            collapsedView?.visibility = View.VISIBLE
-                            expandedView?.visibility = View.GONE
-
-//                            Log.i(FloatingPriceService.TAG, "wrong screen: $resultText")
+                            scanFailed(bitmap!!)
                         }
-                        else {
-//                            showExpanded(true)
-                            expandedView?.visibility = View.VISIBLE
-                        }
-
+                        bitmap!!.recycle()
+                        collapsedView?.visibility = View.VISIBLE
+                        expandedView?.visibility = View.GONE
                     }
-                    IMAGES_PRODUCED++
-                } else {
-                    Toast.makeText(this, "no image found, try again in a few seconds", Toast.LENGTH_SHORT).show()
+                    else {
+                        expandedView?.visibility = View.VISIBLE
+                    }
+
                 }
-                Log.i(TAG, "isViewCollapsed: $isViewCollapsed")
-
-
+                IMAGES_PRODUCED++
             } catch (e: Exception) {
                 e.printStackTrace()
-            } finally {
-                Log.i(TAG, "isViewCollapsed: $isViewCollapsed")
-
-//                if (isViewCollapsed) {
-//                    expandedView?.visibility = View.VISIBLE
-//                }
-                if (bitmap != null) {
-//                    bitmap!!.recycle()
-                }
             }
         }
     }
 
     private fun longClick() {
         longClick =true
-        startService(Intent(baseContext, FloatingPriceService::class.java))
+        MainActivity.openWebApp(false)
+//        startService(Intent(baseContext, FloatingPriceService::class.java))
 
-        Toast.makeText(this,"long clicked", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(this,"long clicked", Toast.LENGTH_SHORT).show()
     }
 
-    private fun displayResults(response: String?) {
-
-    }
 
     private fun startProjection(resultCode: Int, data: Intent) {
         val mpManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -498,7 +361,6 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
             if (mediaProjection != null) {
                 // display metrics
                 mDensity = Resources.getSystem().displayMetrics.densityDpi
-                val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
                 mDisplay = MainActivity.mDisplay
 
                 // create virtual display depending on device width / height
@@ -597,17 +459,13 @@ class FloatingPriceService : Service(),View.OnTouchListener, View.OnClickListene
 
 
     private val isViewCollapsed: Boolean
-        private get() = mFloatingWidget == null || mFloatingWidget!!.findViewById<View>(R.id.collapse_view).visibility == View.VISIBLE
+        get() = mFloatingWidget == null || mFloatingWidget!!.findViewById<View>(R.id.collapse_view).visibility == View.VISIBLE
 
     override fun onDestroy() {
-        if (mFloatingWidget != null) windowManager!!.removeView(mFloatingWidget)
+        if (mFloatingWidget != null) windowManager.removeView(mFloatingWidget)
         super.onDestroy()
         Toast.makeText(this, "service stopped", Toast.LENGTH_SHORT).show()
 
-    }
-
-    override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-        TODO("Not yet implemented")
     }
 }
 

@@ -1,13 +1,8 @@
 package com.OGApps.futprices
 
 import android.app.Service
-import android.content.ComponentName
 import android.content.ContentValues.TAG
 import android.content.Intent
-import android.content.pm.ActivityInfo
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
-import android.content.pm.ResolveInfo
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
@@ -20,7 +15,6 @@ import android.view.WindowManager
 import android.widget.*
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.OGApps.futprices.databinding.ActivityMainBinding
 import kotlin.properties.Delegates
@@ -31,6 +25,21 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         var mDisplay: Display? = null
+        fun openWebApp(web: Boolean) {
+            val context = PlayerSearch.appContext
+            if (!web) {
+                val launchIntent =
+                    context.packageManager.getLaunchIntentForPackage("com.ea.gp.fifaultimate")
+                context.startActivity(launchIntent)
+            } else {
+                val launchIntent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("http://www.ea.com/fifa/ultimate-team/web-app")
+                )
+                launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(launchIntent)
+            }
+        }
     }
 
     private lateinit var mainActivity: ActivityMainBinding
@@ -45,30 +54,36 @@ class MainActivity : AppCompatActivity() {
     private lateinit var companionCBox: CheckBox
 
 
-    private val startMediaProjection = registerForActivityResult(ActivityResultContracts.StartActivityForResult())
-    { result: ActivityResult ->
-        if (result.resultCode == RESULT_OK) {
-            Log.i(TAG, "onCreate: media projection result: ${result.data?.action} & ${result.data}")
-resultCode = result.resultCode
-            resultData = result.data!!
-            screenCapButton.isChecked = true
-        }
-        else
-        {
+    private val startMediaProjection =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult())
+        { result: ActivityResult ->
+            if (result.resultCode == RESULT_OK) {
+                Log.i(
+                    TAG,
+                    "onCreate: media projection result: ${result.data?.action} & ${result.data}"
+                )
+                resultCode = result.resultCode
+                resultData = result.data!!
+                screenCapButton.isChecked = true
+            } else {
 //            stopProjection()
-            screenCapButton.isChecked = false
-            startButton.isEnabled = false
+                screenCapButton.isChecked = false
+                startButton.isEnabled = false
+            }
+
+            Toast.makeText(
+                this,
+                " start media... am i checked?: ${drawOverlayButton.isChecked && screenCapButton.isChecked}",
+                Toast.LENGTH_SHORT
+            ).show()
+            startButton.isEnabled = drawOverlayButton.isChecked && screenCapButton.isChecked
+
         }
-
-        Toast.makeText(this, " start media... am i checked?: ${drawOverlayButton.isChecked && screenCapButton.isChecked}", Toast.LENGTH_SHORT).show()
-        startButton.isEnabled = drawOverlayButton.isChecked && screenCapButton.isChecked
-
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-1        // hide overlay from screen shots/records
+        // hide overlay from screen shots/records
         window.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE
@@ -81,33 +96,29 @@ resultCode = result.resultCode
             @Suppress("DEPRECATION")
             mDisplay = windowManager.defaultDisplay
         }
-//        setContext(this)
+        PlayerSearch.appContext = applicationContext
+
         companionCBox = findViewById(R.id.cBoxComp)
-        companionCBox.setOnCheckedChangeListener { buttonView, isChecked -> if (isChecked) webAppCBox.isChecked = false}
+        companionCBox.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) webAppCBox.isChecked = false
+        }
         webAppCBox = findViewById(R.id.cBoxWeb)
-        webAppCBox.setOnCheckedChangeListener { buttonView, isChecked -> if (isChecked) companionCBox.isChecked = false}
-        startButton = findViewById<Button>(R.id.start_service)
+        webAppCBox.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) companionCBox.isChecked = false
+        }
+        startButton = findViewById(R.id.start_service)
         startButton.setOnClickListener {
 
-            Toast.makeText(this, "am i active?: ${startButton.isEnabled}", Toast.LENGTH_SHORT).show()
-           val service = FloatingPriceService.getStartIntent(this, resultCode, resultData)
+            val service = FloatingPriceService.getStartIntent(this, resultCode, resultData)
             startForegroundService(service)
-            if (companionCBox.isChecked)
-            {
-                val launchIntent = packageManager.getLaunchIntentForPackage("com.ea.gp.fifaultimate")
-            launchIntent?.let { startActivity(it) }
+            if (companionCBox.isChecked) {
+                openWebApp(false)
             }
             if (webAppCBox.isChecked) {
-                val browserIntent = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("http://www.ea.com/fifa/ultimate-team/web-app")
-                )
-                startActivity(browserIntent)
+                openWebApp(true)
             }
-//            val service = FloatingPriceService.getStartIntent(this)
-//            startForegroundService(service)
         }
-        drawOverlayButton = findViewById<ToggleButton>(R.id.btnDrawOverlay)
+        drawOverlayButton = findViewById(R.id.btnDrawOverlay)
         drawOverlayButton.isChecked = Settings.canDrawOverlays(this)
 
         drawOverlayButton.setOnClickListener {
@@ -118,25 +129,18 @@ resultCode = result.resultCode
                 startActivity(intent)
             }
             drawOverlayButton.isChecked = Settings.canDrawOverlays(this)
-//            startButton.isEnabled = drawOverlayButton.isChecked && screenCapButton.isChecked
         }
         screenCapButton = findViewById(R.id.btnScreenCap)
-//        startProjection()
 
         screenCapButton.isChecked = false
-        screenCapButton.setOnCheckedChangeListener { buttonView, isChecked ->
+        screenCapButton.setOnCheckedChangeListener { _, isChecked ->
 
-//            getPermissions()
-            if (isChecked)
-            {
+            if (isChecked) {
                 startProjection()
-            }
-            else
-            {
+            } else {
                 stopProjection()
             }
-            Toast.makeText(this, "am i checked?: ${isChecked}", Toast.LENGTH_SHORT).show()
-            startButton.isEnabled = drawOverlayButton.isChecked && screenCapButton.isChecked;
+            startButton.isEnabled = drawOverlayButton.isChecked && screenCapButton.isChecked
 
 
         }
@@ -144,19 +148,13 @@ resultCode = result.resultCode
         howToButton = findViewById(R.id.btnHowTo)
         howToButton.setOnClickListener {
 
-                val helpIntent = Intent(
-                    baseContext,HelpActivity::class.java
-                )
-                startActivity(helpIntent)
+            val helpIntent = Intent(
+                baseContext, HelpActivity::class.java
+            )
+            startActivity(helpIntent)
         }
 
-        startButton.isEnabled = drawOverlayButton.isChecked && screenCapButton.isChecked;
-
-
-//        val stopButton = findViewById<Button>(R.id.stop_service)
-//        stopButton.setOnClickListener {
-//            stopProjection()
-//        }
+        startButton.isEnabled = drawOverlayButton.isChecked && screenCapButton.isChecked
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -171,22 +169,11 @@ resultCode = result.resultCode
         startButton.isEnabled = drawOverlayButton.isChecked && screenCapButton.isChecked
     }
 
-    private fun getPermissions() {
-        // check if permission is already allowed
-        val intent: Intent?
-        intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
-        val canDraw: Boolean = Settings.canDrawOverlays(this)
-        if (!canDraw) {
-            startActivity(intent)
-        }
-
-    }
-
     private fun startProjection() {
-        mediaProjectionManager = getSystemService(Service.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        mediaProjectionManager =
+            getSystemService(Service.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         val intent = mediaProjectionManager.createScreenCaptureIntent()
         startMediaProjection.launch(intent)
-//        screenCapButton.isChecked = mediaProjectionManager.getMediaProjection(resultCode,resultData) != null
     }
 
     private fun stopProjection() {
