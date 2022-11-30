@@ -26,7 +26,6 @@ jobs:
       run: ./gradlew build
     - name: Build Debug APK
       run: ./gradlew clean assembleDebug
-    - name: Releasing using Hub
     - name: Create release and upload apk
       uses: underwindfall/create-release-with-debugapk@v2.0.0
       env:
