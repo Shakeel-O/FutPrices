@@ -25,14 +25,14 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew build
     - name: Build Debug APK
-      run: ./gradlew assembleDebug
+      run: ./gradlew clean assembleDebug
     - name: Releasing using Hub
-      uses: ShaunLWM/action-release-debugapk@master
+    - name: Create release and upload apk
+      uses: underwindfall/create-release-with-debugapk@v2.0.0
       env:
-       GITHUB_TOKEN: ${{ secrets.buildAPK }}
-       APP_FOLDER: app
-       RELEASE_TITLE: New Build
-    # - name: Android Builder
-      # You may pin to the exact commit or the version.
-      # uses: b4s36t4/Android-Action@bb5c066db6ca0824ee09ee640ca222888a0c2877
-      # uses: b4s36t4/Android-Action@0.0.1
+          GITHUB_TOKEN: ${{ secrets.buildAPK }}
+      with:
+        tag_name: v1.0.0
+        asset_path: app/build/outputs/apk/debug/app-debug.apk
+        asset_name: fut_prices.apk
+        asset_content_type: application/zip
